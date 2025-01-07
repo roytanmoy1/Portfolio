@@ -1,0 +1,73 @@
+/* SectionNav.module.css */
+.sectionNav {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    background-color: var(--bg-secondary);
+    padding: var(--space-xs);
+    border-radius: 6px 0 0 6px;
+    box-shadow: -2px 0 10px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    border-right: none;
+}
+
+@media (max-width: 900px) {
+    .sectionNav {
+        display: none;
+    }
+}
+
+
+.navList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.navItem {
+    position: relative;
+    width: 120px; /* Reduced from 150px */
+    list-style: none;
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    padding: var(--space-xs) var(--space-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem; /* Reduced from 0.9rem */
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.navLink:hover,
+.navLink.active {
+    color: var(--accent-color);
+    background-color: var(--accent-transparent);
+    transform: translateX(-5px);
+    border-color: var(--accent-color);
+}
+
+/* .navLink::before {
+    content: '';
+    width: 6px; /* Reduced from 8px */
+    /* height: 6px; Reduced from 8px */
+    /* background-color: var(--accent-color); */
+    /* border-radius: 50%;
+    margin-right: var(--space-xs);
+    transition: all 0.3s ease; */
+/* } */
+
+.navLink:hover::before,
+.navLink.active::before {
+    background-color: var(--accent-color);
+    transform: scale(1.2);
+}
