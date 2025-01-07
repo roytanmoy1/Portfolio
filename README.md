@@ -1,3 +1,1 @@
-# NextJS-MyApp
-
-This app will contain everything about the developer along with the links to his projects and other things.
+Single page portfolio application based on React, NextJS, HTML, CSS
