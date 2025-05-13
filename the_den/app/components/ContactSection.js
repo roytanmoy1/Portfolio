@@ -26,6 +26,8 @@ const ContactSection = ({ id }) => {
 					<FaPhone className={styles.icon} />
 					<FaWhatsapp className={styles.icon} />
 					<span>7699475642</span>
+					<FaPhone className={styles.icon} />
+					<span>8250602917</span>
 				</a>
 			</div>
 		</section>

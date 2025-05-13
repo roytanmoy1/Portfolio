@@ -3,8 +3,9 @@ import styles from "./Sections.module.css";
 const SkillsSection = ({ id }) => {
 	const skills = {
 		frontend: ["React.js", "Vue.js", "Next.js", "JavaScript", "HTML/CSS"],
-		backend: ["Node.js", "Next.js", "MongoDB", "MySQL", "PostgreSQL"],
+		backend: ["Node.js", "Next.js", "MongoDB", "MySQL", "PostgreSQL", "Sequelize","Express.js"],
 		cloud: [
+			"Azure (App Services, Functions, Blob Storage)",
 			"AWS (S3, Stepfunctions, Lambda)",
 			"AWS (CodePipeline, CodeDeploy)",
 			"AWS (Cloudwatch, SNS, SES)",

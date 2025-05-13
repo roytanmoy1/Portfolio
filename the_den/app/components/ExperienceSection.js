@@ -7,6 +7,35 @@ const ExperienceSection = ({ id }) => {
 	// Array of experience data
 	const experiences = [
 		{
+    role: "Lead- App Engineering",
+    company: "Tiger Analytics, India",
+    year: "Feb 2025 - Current",
+    companyLogo: "/TALOGO.jpeg",
+    skills:
+        "ReactJS, NodeJS, ExpressJS, Azure App Services, MySQL, HTML, SCSS, Sequelize, Websockets, Power BI, MicroStrategy, Keycloak",
+    responsibilities: [
+        "Led the end-to-end development of DeepThought, a proprietary B2B AI platform built from scratch to support enterprise-scale use cases and LLM-powered chat workflows.",
+        "Delivered two full MVPs within three months, enabling rapid client onboarding and internal demo cycles.",
+        "Architected and developed full-stack infrastructure using React and Node.js, with seamless integration of real-time features via WebSockets.",
+        "Built advanced file viewing, uploading, and editing modules, enabling users to interact with files and send them directly to the integrated LLM chat interface.",
+        "Integrated dashboards from Power BI and MicroStrategy, creating unified analytics views for business users.",
+        "Implemented secure authentication and role-based access using Keycloak, ensuring compliance and controlled access.",
+        "Developed and maintained a reusable UI component library, boosting front-end scalability and development speed.",
+        "Collaborated closely with product owners and cross-functional teams to align technical features with evolving business needs and client demands.",
+        "Integrated external Python-based services for analytics and machine learning, supporting intelligent decision-making across workflows.",
+        {
+            title: "Orchestration of deployments across multiple environments",
+            subItems: [
+                "Development and Testing",
+                "UAT/Performance Testing",
+                "Production release management",
+            ],
+        },
+    ],
+    summary:
+        "Key focus on delivering high-quality, scalable solutions while adhering to best practices and maintaining code quality standards throughout the development lifecycle.",
+},
+		{
 			role: "Full Stack Developer (3.9 YOE)",
 			company: "Accenture, India",
 			year: "May 2021 to Feb 2025",

@@ -14,7 +14,7 @@ const HomeSection = ({ id }) => {
 
 	const myData = {
 		about: `I'm Tanmoy Roy - An ordinary guy trying to master Javascript `,
-		role: "Full Stack Developer at Accenture India",
+		role: "Lead - App Engineering at Tiger Analytics, India",
 		location: "Bengaluru, India",
 		phone: "7699475642",
 		email: "roytanmoy.main@gmail.com",
@@ -34,7 +34,7 @@ const HomeSection = ({ id }) => {
 
 	const handleDownloadCV = () => {
 		const link = document.createElement("a");
-		link.href = "/Tanmoy_Kumar_Roy-Resume.pdf";
+		link.href = "/TanmoyKumarRoy_Resume.pdf";
 		link.setAttribute("download", "Tanmoy_Kumar_Roy-Resume.pdf");
 		document.body.appendChild(link);
 		link.click();
