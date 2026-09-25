@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "db:seed": "node scripts/seed-neon.mjs",
+    "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
   },
   "dependencies": {
