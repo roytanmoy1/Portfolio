@@ -6,10 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "db:seed": "node scripts/seed-neon.mjs",
+    "dev:watch": "nodemon --watch ./app --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
   },
   "dependencies": {
-    "next": "15.1.2",
+    "@neondatabase/serverless": "^1.1.0",
+    "next": "^15.5.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0"
@@ -17,6 +20,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.1.2"
+    "eslint-config-next": "15.1.2",
+    "nodemon": "^3.1.10"
   }
 }

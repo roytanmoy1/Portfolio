@@ -1,38 +1,37 @@
 import styles from "./Sections.module.css";
+import { portfolioData } from "../data/portfolioData";
 
 const SkillsSection = ({ id }) => {
-	const skills = {
-		frontend: ["React.js", "Vue.js", "Next.js", "JavaScript", "HTML/CSS"],
-		backend: ["Node.js", "Next.js", "MongoDB", "MySQL", "PostgreSQL", "Sequelize","Express.js"],
-		cloud: [
-			"Azure (App Services, Functions, Blob Storage)",
-			"AWS (S3, Stepfunctions, Lambda)",
-			"AWS (CodePipeline, CodeDeploy)",
-			"AWS (Cloudwatch, SNS, SES)",
-			"Azure (TFS)",
-		],
-		tools: ["Git", "GitHub", "VS Code", "Postman"],
-		unitTesting: ["Jest.js", "DBFit"],
-		general: ["Debugging", "Problem solving", "Teamwork", "Communication"],
-	};
 	return (
 		<section id={id} className={styles.section}>
-			<div className={styles.content}>
-				<h2>My Skills</h2>
+			<div className={styles.sectionInner}>
+				<div className={styles.sectionHeading}>
+					<p className={styles.sectionEyebrow}>Tools of the trade</p>
+					<h2 className={styles.sectionTitle}>A versatile engineering toolkit.</h2>
+					<p className={styles.sectionLead}>
+						The stack changes with the problem. The standards do not: clear interfaces,
+						observable systems, secure defaults, and thoughtful UX.
+					</p>
+				</div>
+
 				<div className={styles.skillsContainer}>
-					{Object.entries(skills).map(([category, skillList]) => (
-						<div key={category} className={styles.skillCategory}>
-							<h3 className={styles.categoryTitle}>
-								{category.charAt(0).toUpperCase() + category.slice(1)}
-							</h3>
+					{portfolioData.skills.map((group) => (
+						<section className={styles.skillCategory} key={group.category}>
+							<div className={styles.skillCategoryHeader}>
+								<span className={styles.skillCategoryIcon} aria-hidden="true">{group.icon}</span>
+								<h3 className={styles.categoryTitle}>{group.category}</h3>
+							</div>
 							<div className={styles.skillTags}>
-								{skillList.map((skill, index) => (
-									<div key={index} className={styles.skillTag}>
-										{skill}
+								{group.items.map((skill) => (
+									<div className={styles.skillTag} key={skill.name}>
+										<span>{skill.name}</span>
+										<span className={styles.skillLevel} aria-hidden="true">
+											<span className={styles.skillLevelFill} style={{ width: `${skill.level}%` }} />
+										</span>
 									</div>
 								))}
 							</div>
-						</div>
+						</section>
 					))}
 				</div>
 			</div>

@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tanmoy Kumar Roy — Portfolio
 
-## Getting Started
+A data-driven Next.js portfolio with a glassmorphism interface, responsive navigation, theme switching, project filtering, resume download, and an optional contact form provider.
 
-First, run the development server:
+## Run locally
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Next.js Fast Refresh reflects edits automatically; `nodemon` is not needed for normal Next.js development.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Production commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Contact form
 
-To learn more about Next.js, take a look at the following resources:
+The form posts to the server route at `/api/contact`. Set the server-only `FORMSPREE_ENDPOINT` in `.env.local` to a verified Formspree endpoint. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before forwarding. Without that variable, submitting the form opens a pre-filled email in the visitor's default mail client.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Never commit `.env.local` or provider credentials.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+The current public Vercel deployment is [tanmoyroy.vercel.app](https://tanmoyroy.vercel.app/). The Vercel project is connected to [github.com/roytanmoy1/Portfolio](https://github.com/roytanmoy1/Portfolio).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To deploy the updated version on Vercel:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Import the repository into Vercel.
+2. Set the project root to `the_den` if the repository root is the parent `Portfolio` folder.
+3. Use the default Next.js build settings.
+4. Add `NEXT_PUBLIC_SITE_URL` with the final public URL.
+5. Add the server-only `DATABASE_URL` from Neon.
+6. Optionally add the server-only `FORMSPREE_ENDPOINT`.
+7. Deploy and verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, and the resume download.
+
+## Data and database
+
+The portfolio uses Neon Postgres as an optional server-side data layer. The schema is in [db/schema.sql](db/schema.sql), and [scripts/seed-neon.mjs](scripts/seed-neon.mjs) stores the current portfolio data as JSONB in `portfolio_content`. Contact submissions are stored in `contact_messages` when `DATABASE_URL` is configured. The static data in [app/data/portfolioData.js](app/data/portfolioData.js) remains the source used by the client build and is the fallback when Neon is not configured.
+
+Set up Neon locally:
+
+```bash
+copy .env.example .env.local
+# edit .env.local and add DATABASE_URL
+npm run db:seed
+```
+
+Use `/api/portfolio` to confirm that the portfolio row is available. Use the Neon console's SQL editor to inspect rows safely; never expose `DATABASE_URL` with a `NEXT_PUBLIC_` prefix.
+
+## Project hosting model
+
+The Lab section separates enterprise case studies from personal projects and loads the public, non-fork repositories from GitHub. It shows live preview panels only for projects with an explicitly configured `liveUrl`; other repositories remain clearly marked as not deployed. Each GitHub repository needs its own deployment configuration, build command, environment variables, and service credentials. The portfolio cannot safely deploy all repositories automatically without access to the hosting account and project-specific configuration.
+
+For the Vercel workflow, import each repository as its own Vercel project, configure its root directory and environment variables, then add the resulting URL to that project's `liveUrl` entry in [app/data/portfolioData.js](app/data/portfolioData.js). You can also set the repository's GitHub homepage so the repository shelf can discover it. Deployment tokens should stay outside this repository.

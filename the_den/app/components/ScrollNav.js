@@ -1,81 +1,55 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import styles from "./ScrollNav.module.css";
 
-const SectionNav = () => {
-	const [activeSection, setActiveSection] = useState("");
+const sections = [
+	{ id: "home", label: "Home" },
+	{ id: "about", label: "About" },
+	{ id: "experience", label: "Experience" },
+	{ id: "skills", label: "Skills" },
+	{ id: "projects", label: "Case studies" },
+	{ id: "lab", label: "Personal lab" },
+	{ id: "contact", label: "Contact" },
+];
 
-	const sections = [
-		{ id: "home", label: "Home" },
-		{ id: "about", label: "About" },
-		{ id: "experience", label: "Experience" },
-		{ id: "skills", label: "Skills" },
-		{ id: "projects", label: "Projects" },
-		{ id: "contact", label: "Contact" },
-	];
+const SectionNav = () => {
+	const [activeSection, setActiveSection] = useState("home");
 
 	useEffect(() => {
-		const observerOptions = {
-			root: null,
-			rootMargin: "-10% 0px -10% 0px",
-			threshold: [0.1, 0.5], // Lower threshold for better detection
-		};
+		const elements = sections
+			.map(({ id }) => document.getElementById(id))
+			.filter(Boolean);
 
-		const handleIntersect = (entries) => {
-			entries.forEach((entry) => {
-				if (entry.isIntersecting) {
-					setActiveSection(entry.target.id);
-					console.log("Active section:", entry.target.id); // Debug log
-				}
-			});
-		};
+		if (!elements.length) return undefined;
 
-		const observer = new IntersectionObserver(handleIntersect, observerOptions);
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const visibleEntry = entries
+					.filter((entry) => entry.isIntersecting)
+					.sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
-		// Add a small delay to ensure DOM elements are mounted
-		setTimeout(() => {
-			sections.forEach(({ id }) => {
-				const element = document.getElementById(id);
-				if (element) {
-					observer.observe(element);
-					console.log(`Observing section: ${id}`);
-				} else {
-					console.warn(`Section with id "${id}" not found`);
-				}
-			});
-		}, 100);
+				if (visibleEntry) setActiveSection(visibleEntry.target.id);
+			},
+			{ rootMargin: "-18% 0px -58% 0px", threshold: [0.05, 0.25, 0.5] }
+		);
 
+		elements.forEach((element) => observer.observe(element));
 		return () => observer.disconnect();
 	}, []);
 
-	const handleClick = (e, id) => {
-		e.preventDefault();
-		const element = document.getElementById(id);
-		if (element) {
-			const headerHeight = 60; // Adjust based on your header height
-			const elementPosition = element.getBoundingClientRect().top;
-			const offsetPosition =
-				elementPosition + window.pageYOffset - headerHeight;
-
-			window.scrollTo({
-				top: offsetPosition,
-				behavior: "smooth",
-			});
-		}
-	};
-
 	return (
 		<nav className={styles.sectionNav} aria-label="Section navigation">
+			<span className={styles.navLabel}>Explore</span>
 			<ul className={styles.navList}>
 				{sections.map(({ id, label }) => (
 					<li key={id} className={styles.navItem}>
 						<a
 							href={`#${id}`}
-							onClick={(e) => handleClick(e, id)}
-							className={`${styles.navLink} ${
-								activeSection === id ? styles.active : ""
-							}`}
-							// aria-current={activeSection === id ? "true" : "false"}
+							className={`${styles.navLink} ${activeSection === id ? styles.active : ""}`}
+							aria-current={activeSection === id ? "location" : undefined}
 						>
+							<span className={styles.navDot} aria-hidden="true" />
 							{label}
 						</a>
 					</li>

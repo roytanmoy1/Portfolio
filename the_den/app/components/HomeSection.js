@@ -1,93 +1,119 @@
+"use client";
+
+import { FaArrowDown, FaEnvelope, FaLinkedinIn, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
+import Image from "next/image";
 import styles from "./Sections.module.css";
-import {
-	FaMapMarkerAlt,
-	FaPhone,
-	FaEnvelope,
-	FaHeart,
-	FaConnectdevelop,
-} from "react-icons/fa";
-import AboutSection from "./AboutSection";
-import { useState, useEffect } from "react";
+import { portfolioData } from "../data/portfolioData";
 
 const HomeSection = ({ id }) => {
-	const [showMore, setShowMore] = useState(false);
-
-	const myData = {
-		about: `I'm Tanmoy Roy - An ordinary guy trying to master Javascript `,
-		role: "Lead - App Engineering at Tiger Analytics, India",
-		location: "Bengaluru, India",
-		phone: "7699475642",
-		email: "roytanmoy.main@gmail.com",
-	};
-	useEffect(() => {
-		if (showMore) {
-			const aboutSection = document.getElementById("about");
-			if (aboutSection) {
-				aboutSection.scrollIntoView({
-					behavior: "smooth",
-					block: "start",
-				});
-			}
-		}
-		setShowMore(false);
-	}, [showMore]);
-
-	const handleDownloadCV = () => {
-		const link = document.createElement("a");
-		link.href = "/TanmoyKumarRoy_Resume.pdf";
-		link.setAttribute("download", "Tanmoy_Kumar_Roy-Resume.pdf");
-		document.body.appendChild(link);
-		link.click();
-		link.parentNode.removeChild(link);
+	const scrollToAbout = () => {
+		document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
 	};
 
 	return (
-		<section id={id} className={styles.section}>
-			<div className={styles.content}>
-				<h2>Hello There</h2>
-				<p>
-					{myData.about}
-					<FaHeart className={styles.icon} />
-				</p>
-				<div className={styles.ctas}>
-					<button className={styles.primary} onClick={handleDownloadCV}>
-						Download CV
-					</button>
-					<button
-						className={styles.secondary}
-						onClick={() => setShowMore(!showMore)}
-					>
-						Know More !!
-					</button>
-				</div>
-				<div className={styles.contactInfo}>
-					<a
-						target="_blank"
-						rel="noopener noreferrer"
-						className={styles.contactItem}
-					>
-						<FaConnectdevelop className={styles.icon} />
-						<span>{myData.role}</span>
-					</a>
-					<a
-						target="_blank"
-						rel="noopener noreferrer"
-						className={styles.contactItem}
-					>
-						<FaMapMarkerAlt className={styles.icon} />
-						<span>{myData.location}</span>
-					</a>
-					<a href="tel:7699475642" className={styles.contactItem}>
-						<FaPhone className={styles.icon} />
-						<span>{myData.phone}</span>
-					</a>
-					<a
-						href="mailto:roytanmoy.main@gmail.com"
-						className={styles.contactItem}
-					>
-						<FaEnvelope className={styles.icon} />
-						<span>{myData.email}</span>
-					</a>
+		<section id={id} className={`${styles.section} ${styles.heroSection}`}>
+			<div className={styles.sectionInner}>
+				<div className={styles.heroGrid}>
+					<div className={styles.heroCopy}>
+						<p className={styles.eyebrow}>Consultant · Full Stack Engineer</p>
+						<h1 className={styles.heroTitle}>
+							Building products
+							<span className={styles.titleAccent}>people remember.</span>
+						</h1>
+						<p className={styles.heroLead}>{portfolioData.profile}</p>
+
+						<div className={styles.heroActions}>
+							<a
+								href={portfolioData.resume}
+								download="Tanmoy-Kumar-Roy-Resume.pdf"
+								className={styles.primary}
+							>
+								Download resume <FaArrowDown aria-hidden="true" />
+							</a>
+							<button type="button" className={styles.secondary} onClick={scrollToAbout}>
+								Explore the work
+							</button>
+						</div>
+
+						<div className={styles.heroLinks}>
+							<a className={styles.textLink} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+								LinkedIn
+							</a>
+							<a className={styles.textLink} href={portfolioData.github} target="_blank" rel="noreferrer">
+								GitHub
+							</a>
+							<a className={styles.textLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
+								LeetCode
+						</a>
+							<a className={styles.textLink} href={`mailto:${portfolioData.email}`}>
+								Email me
+							</a>
+						</div>
+					</div>
+
+					<aside className={styles.heroPanel} aria-label="Professional snapshot">
+						<div className={styles.availability}>
+							<span className={styles.statusDot} aria-hidden="true" />
+							Open to meaningful conversations
+						</div>
+
+						<div className={styles.panelHeader}>
+							<div className={styles.avatar}>
+								<Image
+									src={portfolioData.photo}
+									alt="Tanmoy Kumar Roy standing in front of a waterfall"
+									width={96}
+									height={96}
+									className={styles.avatarImage}
+									priority
+								/>
+							</div>
+							<div>
+								<p className={styles.panelKicker}>Currently</p>
+								<h2 className={styles.panelTitle}>Consultant at Deloitte USI</h2>
+							</div>
+						</div>
+
+						<div className={styles.statGrid}>
+							{portfolioData.highlights.map((stat) => (
+								<div className={styles.statCard} key={stat.label}>
+									<strong className={styles.statValue}>{stat.value}</strong>
+									<span className={styles.statLabel}>{stat.label}</span>
+								</div>
+							))}
+						</div>
+
+						<div className={styles.contactStrip}>
+							<a className={styles.contactItem} href={`mailto:${portfolioData.email}`}>
+								<FaEnvelope className={styles.contactIcon} aria-hidden="true" />
+								<span className={styles.contactText}>
+									<span className={styles.contactLabel}>Email</span>
+									{portfolioData.email}
+								</span>
+							</a>
+							<a className={styles.contactItem} href={`tel:${portfolioData.phones[0].replace(/\D/g, "")}`}>
+								<FaPhone className={styles.contactIcon} aria-hidden="true" />
+								<span className={styles.contactText}>
+									<span className={styles.contactLabel}>Call</span>
+									{portfolioData.phones[0]}
+								</span>
+							</a>
+							<a className={styles.contactItem} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+								<FaLinkedinIn className={styles.contactIcon} aria-hidden="true" />
+								<span className={styles.contactText}>
+									<span className={styles.contactLabel}>Profile</span>
+									LinkedIn
+								</span>
+							</a>
+							<span className={styles.contactItem}>
+								<FaMapMarkerAlt className={styles.contactIcon} aria-hidden="true" />
+								<span className={styles.contactText}>
+									<span className={styles.contactLabel}>Based in</span>
+									{portfolioData.location}
+								</span>
+							</span>
+						</div>
+					</aside>
 				</div>
 			</div>
 		</section>

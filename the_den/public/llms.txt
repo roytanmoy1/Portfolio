@@ -1,0 +1,31 @@
+# Tanmoy Kumar Roy
+
+Tanmoy Kumar Roy is a Consultant and Lead Full Stack Engineer based in Bengaluru, India. He builds enterprise web applications, real-time systems, cloud services, and Generative AI platforms.
+
+## Primary facts
+
+- Name: Tanmoy Kumar Roy
+- Role: Consultant · Full Stack Engineer
+- Current organization: Deloitte USI
+- Location: Bengaluru, India
+- Email: roytanmoy.main@gmail.com
+- Resume: https://tanmoyroy.vercel.app/TanmoyKumarRoy_Resume.pdf
+- LinkedIn: https://www.linkedin.com/in/roytanmoy1/
+- GitHub: https://github.com/roytanmoy1
+- LeetCode: https://leetcode.com/u/royTanmoy1/
+
+## Portfolio sections
+
+- About: product-minded delivery, Generative AI, real-time systems, cloud engineering, and team leadership.
+- Experience: Deloitte USI, Tiger Analytics, and Accenture.
+- Case studies: EPIC Hub, Supply Explorer, SenseAI · DeepThought, Talent Modeling & Forecasting, and Leadership Data Automation API.
+- Personal lab: LeetCode, curated personal projects, and public GitHub repositories.
+- Contact: validated contact form and direct professional links.
+
+## Core technologies
+
+React, Redux Toolkit, Vue.js, Next.js, Node.js, Express.js, PostgreSQL, REST APIs, WebSockets, AWS, Azure, Generative AI workflows, Python integrations, Power BI, MicroStrategy, Jest, DBFit, Agile, and Scrum.
+
+## Canonical source
+
+https://tanmoyroy.vercel.app/

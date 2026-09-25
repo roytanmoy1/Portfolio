@@ -1,66 +1,75 @@
-import styles from "./Sections.module.css";
+"use client";
 
-const ProjectsSection = ({id}) => {
-	const projects = [
-		{
-			title: "Invoice Dashboard using Next.js",
-			description:
-				"A dashboard for managing invoices, payments and customer details",
-			technologies: [
-				"Next.js",
-				"React.js",
-				"HTML5/CSS3",
-				"PostGRESQL",
-				"Github",
-				"Vercel",
-			],
-			source: "Developed as part of learning NextJS from nextjs.org",
-			links: [
-				{
-					title: "Live Demo",
-					url: "https://next-js-app-nine-ebon.vercel.app/login?callbackUrl=https%3A%2F%2Fnext-js-app-nine-ebon.vercel.app%2Fdashboard",
-					type: "demo",
-				},
-				{
-					title: "Source Code",
-					url: "https://github.com/roytanmoy1/NextJSApp",
-					type: "code",
-				},
-			],
-		},
-	];
+import { useMemo, useState } from "react";
+import styles from "./Sections.module.css";
+import { portfolioData } from "../data/portfolioData";
+
+const ProjectsSection = ({ id }) => {
+	const [activeFilter, setActiveFilter] = useState("All");
+	const filters = ["All", ...new Set(portfolioData.projects.map((project) => project.category))];
+	const visibleProjects = useMemo(
+		() => activeFilter === "All"
+			? portfolioData.projects
+			: portfolioData.projects.filter((project) => project.category === activeFilter),
+		[activeFilter]
+	);
 
 	return (
 		<section id={id} className={styles.section}>
-			<div className={styles.content}>
-				<h2>My Projects</h2>
+			<div className={styles.sectionInner}>
+				<div className={styles.sectionHeading}>
+					<p className={styles.sectionEyebrow}>Enterprise case studies</p>
+					<h2 className={styles.sectionTitle}>Systems behind ambitious products.</h2>
+					<p className={styles.sectionLead}>
+						Selected delivery work from Deloitte USI, Tiger Analytics, and Accenture.
+						Personal builds, experiments, and algorithm practice live in the Lab.
+					</p>
+				</div>
+
+				<div className={styles.projectsToolbar}>
+					<div className={styles.filterList} role="group" aria-label="Filter projects">
+						{filters.map((filter) => (
+							<button
+								type="button"
+								key={filter}
+								className={`${styles.filterButton} ${activeFilter === filter ? styles.active : ""}`}
+								onClick={() => setActiveFilter(filter)}
+								aria-pressed={activeFilter === filter}
+							>
+								{filter}
+							</button>
+						))}
+					</div>
+					<span className={styles.projectCount}>{visibleProjects.length} case studies</span>
+				</div>
+
 				<div className={styles.projectsGrid}>
-					{projects.map((project, index) => (
-						<div key={index} className={styles.projectCard}>
-							<h3>{project.title}</h3>
-							<p>{project.description}</p>
-							<div className={styles.techStack}>
-								{project.technologies.map((tech, techIndex) => (
-									<span key={techIndex} className={styles.techTag}>
-										{tech}
-									</span>
+					{visibleProjects.map((project) => (
+						<article className={styles.projectCard} key={project.title}>
+							<div className={styles.projectTop}>
+								<span className={styles.projectCategory}>{project.category}</span>
+								<span className={styles.projectMetric}>{project.metric}</span>
+							</div>
+							<h3 className={styles.projectTitle}>{project.title}</h3>
+							<p className={styles.projectClient}>{project.client} · {project.period}</p>
+							<p className={styles.projectDescription}>{project.description}</p>
+
+							<div className={styles.stackList} aria-label={`${project.title} technology stack`}>
+								{project.stack.map((technology) => (
+									<span className={styles.stackTag} key={technology}>{technology}</span>
 								))}
 							</div>
-							<p className={styles.projectSource}>{project.source}</p>
+
+							<ul className={styles.projectHighlights}>
+								{project.highlights.map((highlight) => (
+									<li className={styles.projectHighlight} key={highlight}>{highlight}</li>
+								))}
+							</ul>
+
 							<div className={styles.projectLinks}>
-								{project.links.map((link, linkIndex) => (
-									<a
-										key={linkIndex}
-										href={link.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className={`${styles.projectLink} ${styles[link.type]}`}
-									>
-										{link.title}
-									</a>
-								))}
+								<a className={styles.projectLink} href="#contact">Discuss a similar build</a>
 							</div>
-						</div>
+						</article>
 					))}
 				</div>
 			</div>
