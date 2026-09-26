@@ -8,15 +8,6 @@ import { portfolioData } from "../data/portfolioData";
 
 const initialForm = { name: "", email: "", message: "", company: "" };
 
-const openEmailFallback = (form) => {
-	const subject = encodeURIComponent(`Portfolio enquiry from ${form.name}`);
-	const body = encodeURIComponent(
-		`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
-	);
-
-	window.location.href = `mailto:${portfolioData.email}?subject=${subject}&body=${body}`;
-};
-
 const ContactSection = ({ id }) => {
 	const [form, setForm] = useState(initialForm);
 	const [status, setStatus] = useState({ type: "", message: "" });
@@ -59,16 +50,6 @@ const ContactSection = ({ id }) => {
 			});
 			const result = await response.json().catch(() => ({}));
 
-			if (response.status === 503) {
-				openEmailFallback({ name, email, message });
-				setStatus({
-					type: "success",
-					message: "Opening your email app with the message ready to send.",
-				});
-				setLoading(false);
-				return;
-			}
-
 			if (!response.ok) {
 				throw new Error(result.error || "The message could not be sent.");
 			}
@@ -98,7 +79,7 @@ const ContactSection = ({ id }) => {
 						</p>
 
 						<div className={styles.contactLinks}>
-							<a className={styles.contactLink} href={`mailto:${portfolioData.email}`}>
+							<a className={styles.contactLink} href="#contact-form">
 								<FaEnvelope aria-hidden="true" /> {portfolioData.email}
 							</a>
 							<a className={styles.contactLink} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
@@ -116,11 +97,11 @@ const ContactSection = ({ id }) => {
 						</div>
 					</div>
 
-					<form className={styles.contactForm} onSubmit={handleSubmit}>
+					<form id="contact-form" className={styles.contactForm} onSubmit={handleSubmit}>
 						<div className={styles.formHeader}>
 							<h3 className={styles.formTitle}>Send a note</h3>
 							<p className={styles.formSubtitle}>
-								No account needed. Your email app is the fallback if no form service is configured.
+								Delivered securely through this site. No email app or account required.
 							</p>
 						</div>
 

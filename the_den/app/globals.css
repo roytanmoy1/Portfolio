@@ -36,7 +36,7 @@
 	--element-spacing: clamp(0.8rem, 1.5vw, 1.25rem);
 }
 
-:root:not(.dark) {
+:root.light {
 	color-scheme: light;
 	--bg-base: #f7f1e9;
 	--bg-deep: #e9ded2;
@@ -156,7 +156,7 @@ svg {
 
 @media (max-width: 700px) {
 	:root {
-		--section-spacing: clamp(3.25rem, 10vw, 4.75rem);
+		--section-spacing: clamp(3.25rem, 10vw, 4.5rem);
 	}
 }
 

@@ -34,18 +34,9 @@
 	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 86%);
 }
 
-.contentShell {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: start;
-	gap: 1.5rem;
-	width: min(1390px, calc(100% - 2rem));
-	margin: 0 auto;
-}
-
 .main {
-	width: 100%;
-	min-width: 0;
+	width: min(1280px, calc(100% - 2rem));
+	margin: 0 auto;
 	padding-top: 7.5rem;
 }
 
@@ -71,12 +62,9 @@
 }
 
 @media (max-width: 700px) {
-	.contentShell {
-		display: block;
-		width: calc(100% - 1rem);
-	}
-
 	.main {
-		padding-top: 6.3rem;
+		width: calc(100% - 1.25rem);
+		max-width: 1240px;
+		padding-top: 5.75rem;
 	}
 }

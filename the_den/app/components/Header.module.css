@@ -206,7 +206,10 @@
 
 @media (max-width: 520px) {
 	.header {
-		padding-left: 0.65rem;
+		top: 0.5rem;
+		width: calc(100% - 1rem);
+		min-height: 3.75rem;
+		padding: 0.5rem;
 	}
 
 	.logoText small {
@@ -216,5 +219,14 @@
 	.logoMark {
 		width: 2.4rem;
 		height: 2.4rem;
+	}
+
+	.logoText strong {
+		font-size: 0.9rem;
+	}
+
+	.nav {
+		top: calc(100% + 0.45rem);
+		width: calc(100vw - 1rem);
 	}
 }

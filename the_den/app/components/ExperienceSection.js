@@ -2,6 +2,11 @@ import Image from "next/image";
 import styles from "./Sections.module.css";
 import { portfolioData } from "../data/portfolioData";
 
+const projectsByCompany = portfolioData.projects.reduce((groups, project) => {
+	(groups[project.client] ??= []).push(project);
+	return groups;
+}, {});
+
 const ExperienceSection = ({ id }) => {
 	return (
 		<section id={id} className={styles.section}>
@@ -62,6 +67,33 @@ const ExperienceSection = ({ id }) => {
 									<li key={highlight}>{highlight}</li>
 								))}
 							</ul>
+
+							{projectsByCompany[experience.company]?.length > 0 && (
+								<div className={styles.companyProjects}>
+									<p className={styles.companyProjectsLabel}>Selected projects</p>
+									<div className={styles.companyProjectList}>
+										{projectsByCompany[experience.company].map((project, projectIndex) => (
+											<details className={styles.companyProject} key={project.title}>
+												<summary>
+													<span className={styles.projectOrder}>{String(projectIndex + 1).padStart(2, "0")}</span>
+													<span className={styles.companyProjectIdentity}>
+														<strong>{project.title}</strong>
+														<small>{project.category} · {project.period}</small>
+													</span>
+												</summary>
+												<div className={styles.companyProjectBody}>
+													<p>{project.description}</p>
+													<ul>
+														{project.highlights.slice(0, 3).map((highlight) => (
+															<li key={highlight}>{highlight}</li>
+														))}
+													</ul>
+												</div>
+											</details>
+										))}
+									</div>
+								</div>
+							)}
 						</article>
 					))}
 				</div>

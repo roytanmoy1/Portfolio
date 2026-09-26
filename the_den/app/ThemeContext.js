@@ -13,6 +13,7 @@ export function ThemeProvider({ children }) {
 
 		setDarkMode(isDark);
 		document.documentElement.classList.toggle("dark", isDark);
+		document.documentElement.classList.toggle("light", !isDark);
 	}, []);
 
 	const toggleDarkMode = () => {
@@ -21,6 +22,7 @@ export function ThemeProvider({ children }) {
 		setDarkMode(nextMode);
 		localStorage.setItem("darkMode", String(nextMode));
 		document.documentElement.classList.toggle("dark", nextMode);
+		document.documentElement.classList.toggle("light", !nextMode);
 	};
 
 	return (

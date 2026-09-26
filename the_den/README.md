@@ -20,7 +20,7 @@ npm run start
 
 ## Contact form
 
-The form posts to the server route at `/api/contact`. Set the server-only `FORMSPREE_ENDPOINT` in `.env.local` to a verified Formspree endpoint. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before forwarding. Without that variable, submitting the form opens a pre-filled email in the visitor's default mail client.
+The form posts to the server route at `/api/contact`. Set the server-only `FORMSPREE_ENDPOINT` in `.env.local` to a verified Formspree endpoint. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before storing and forwarding the message. If delivery is not configured, the form reports an error without opening another application.
 
 Never commit `.env.local` or provider credentials.
 
@@ -35,7 +35,7 @@ To deploy the updated version on Vercel:
 3. Use the default Next.js build settings.
 4. Add `NEXT_PUBLIC_SITE_URL` with the final public URL.
 5. Add the server-only `DATABASE_URL` from Neon.
-6. Optionally add the server-only `FORMSPREE_ENDPOINT`.
+6. Add the server-only `FORMSPREE_ENDPOINT` for direct email delivery.
 7. Deploy and verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, and the resume download.
 
 ## Data and database
