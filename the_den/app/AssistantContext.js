@@ -5,7 +5,7 @@ import { createContext, useContext, useState } from "react";
 const AssistantContext = createContext(null);
 
 export function AssistantProvider({ children }) {
-	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+	const [isAssistantOpen, setIsAssistantOpen] = useState(true);
 
 	return (
 		<AssistantContext.Provider

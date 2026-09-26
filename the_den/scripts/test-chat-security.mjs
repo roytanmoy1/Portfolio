@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import { jwtVerify } from "jose";
 import { portfolioData } from "../app/data/portfolioData.js";
 import {
+	MAX_CHAT_FILE_BYTES,
+	decryptChatFile,
+	encryptChatFile,
+	getFileEncryptionKey,
+	validateChatFileContent,
+	validateChatFileMetadata,
+} from "../app/lib/chatFiles.js";
+import {
 	PORTFOLIO_ONLY_REFUSAL,
 	SECURITY_REFUSAL,
 	buildPublicPortfolioContext,
@@ -44,8 +52,22 @@ assert.equal(payload.scope, "portfolio:chat");
 assert.equal(normalizeWebSocketUrl("https://example.com/ws"), "wss://example.com/ws");
 assert.throws(() => normalizeWebSocketUrl("http://example.com/ws"));
 
+const fileKeyValue = Buffer.alloc(32, 7).toString("base64");
+const fileKey = getFileEncryptionKey(fileKeyValue);
+const fileContent = Buffer.from("Public portfolio attachment");
+const metadata = validateChatFileMetadata({ name: "../resume notes.txt", size: fileContent.length, type: "text/plain" });
+assert.equal(metadata.name, "resume notes.txt");
+assert.throws(() => validateChatFileMetadata({ name: "large.pdf", size: MAX_CHAT_FILE_BYTES + 1, type: "application/pdf" }));
+assert.throws(() => validateChatFileMetadata({ name: "fake.pdf", size: 5, type: "text/plain" }));
+assert.throws(() => validateChatFileContent("application/pdf", fileContent));
+assert.deepEqual(validateChatFileContent("text/plain", fileContent), fileContent);
+const encryptedFile = encryptChatFile(fileContent, fileKey);
+assert.notDeepEqual(encryptedFile.ciphertext, fileContent);
+assert.deepEqual(decryptChatFile(encryptedFile, fileKey), fileContent);
+
 process.env.CHAT_TOKEN_SECRET = secret;
 process.env.CHAT_ALLOWED_ORIGINS = origin;
+process.env.FILE_ENCRYPTION_KEY = fileKeyValue;
 process.env.GEMINI_API_KEY = "test-key-not-used";
 process.env.GEMINI_MODEL = "gemini-2.5-flash";
 
@@ -63,5 +85,22 @@ const invalidToken = await chatFunction.fetch(new Request("http://localhost/ws?t
 	headers: { Origin: origin, Upgrade: "websocket" },
 }));
 assert.equal(invalidToken.status, 401);
+
+const unauthorizedUpload = await chatFunction.fetch(new Request("http://localhost/upload", {
+	method: "POST",
+	headers: { Origin: origin, "Content-Type": "multipart/form-data" },
+}));
+assert.equal(unauthorizedUpload.status, 401);
+
+const oversizedUpload = await chatFunction.fetch(new Request("http://localhost/upload", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${token}`,
+		"Content-Length": String(11 * 1024 * 1024),
+		"Content-Type": "multipart/form-data; boundary=test",
+		Origin: origin,
+	},
+}));
+assert.equal(oversizedUpload.status, 413);
 
 console.log("Chat guardrails and short-lived token contract verified.");

@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test:chat": "node scripts/test-chat-security.mjs",
+    "test:chat-schema": "node scripts/verify-chat-schema.mjs",
     "test:contact": "node scripts/test-contact-smtp.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
@@ -23,6 +24,7 @@
     "jose": "^6.2.12",
     "next": "^15.5.9",
     "nodemailer": "^10.0.10",
+    "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.4.0"

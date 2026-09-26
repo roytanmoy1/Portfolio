@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { issueChatToken, normalizeWebSocketUrl } from "../../../lib/chatToken";
 
@@ -6,6 +7,7 @@ export const runtime = "nodejs";
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 12;
 const requestLog = new Map();
+const sessionPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const response = (body, status) =>
 	NextResponse.json(body, {
@@ -38,8 +40,18 @@ export async function POST(request) {
 
 	try {
 		const websocketUrl = normalizeWebSocketUrl(process.env.CHAT_WEBSOCKET_URL);
-		const token = await issueChatToken({ origin, secret: process.env.CHAT_TOKEN_SECRET });
-		return response({ token, websocketUrl }, 200);
+		const cookieSession = request.cookies.get("portfolio_chat_session")?.value;
+		const sessionId = sessionPattern.test(cookieSession || "") ? cookieSession : randomUUID();
+		const token = await issueChatToken({ origin, secret: process.env.CHAT_TOKEN_SECRET, sessionId });
+		const tokenResponse = response({ token, websocketUrl }, 200);
+		tokenResponse.cookies.set("portfolio_chat_session", sessionId, {
+			httpOnly: true,
+			maxAge: 24 * 60 * 60,
+			path: "/",
+			sameSite: "strict",
+			secure: requestOrigin.startsWith("https://"),
+		});
+		return tokenResponse;
 	} catch {
 		return response({ error: "Portfolio assistant is not configured." }, 503);
 	}

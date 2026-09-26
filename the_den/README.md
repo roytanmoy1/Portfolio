@@ -42,11 +42,16 @@ Never commit `.env.local`, mailbox passwords, or app passwords.
 
 The header robot control opens a responsive right-side assistant over an authenticated WebSocket. The browser obtains a two-minute, origin-bound JWT from `/api/chat/token`, then connects directly to the `portfoliochat` Neon Function. Gemini credentials remain only in the Function environment.
 
+The panel opens by default. Native browser speech recognition can fill the prompt from the microphone, and spoken replies are opt-in. Browser support and microphone permission determine voice availability; typed chat remains the fallback.
+
+Visitors may attach up to five `.pdf`, `.txt`, `.md`, `.csv`, `.json`, `.png`, `.jpg`, `.jpeg`, or `.webp` files, with a hard limit of 2 MiB each. Both client and Function validate the limits; the Function also verifies file signatures or UTF-8/JSON content. Files are SHA-256 hashed, encrypted with AES-256-GCM before insertion, scoped to the anonymous HttpOnly-cookie session, unavailable through any public download route, and excluded from queries after 24 hours. Uploaded content is untrusted context, never model instructions.
+
 Security controls include:
 
 - same-origin token minting and an origin allowlist on the WebSocket handshake
 - signed, short-lived, scope-limited JWTs
 - text-only frames, strict input/output sizes, per-connection rate limits, one in-flight model request, and timeouts
+- authenticated multipart uploads, MIME/signature checks, transactional five-file limits, encrypted Postgres storage, and attachment ownership checks
 - deterministic refusal of unrelated questions, prompt extraction, jailbreaks, and credential requests before inference
 - a curated public-data allowlist instead of database access or arbitrary retrieval
 - Gemini safety settings, low-temperature answers, output scanning, sanitized errors, and no prompt/body logging
@@ -64,12 +69,13 @@ neon deploy --env .env.chat.local --no-env-pull
 neon functions get portfoliochat
 ```
 
-Use the same `CHAT_TOKEN_SECRET` in Neon and Vercel. Store `GEMINI_API_KEY`, `GEMINI_MODEL`, and `CHAT_ALLOWED_ORIGINS` in Neon. Store only `CHAT_TOKEN_SECRET` and the returned invocation origin as `CHAT_WEBSOCKET_URL` in Vercel. Redeploy Vercel after setting those variables.
+Use the same `CHAT_TOKEN_SECRET` in Neon and Vercel. Store `GEMINI_API_KEY`, `GEMINI_MODEL`, `CHAT_ALLOWED_ORIGINS`, and a base64-encoded 32-byte `FILE_ENCRYPTION_KEY` in Neon. Store only `CHAT_TOKEN_SECRET` and the returned invocation origin as `CHAT_WEBSOCKET_URL` in Vercel. Redeploy Vercel after setting those variables.
 
 Run the deterministic boundary checks with:
 
 ```bash
 npm run test:chat
+node --env-file=.env.neon.local scripts/verify-chat-schema.mjs
 ```
 
 The Bengaluru map is a keyless Google Maps embed. It intentionally shows the city, not a precise home address.

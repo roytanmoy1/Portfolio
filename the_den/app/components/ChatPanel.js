@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FaArrowUp, FaRobot, FaTimes } from "react-icons/fa";
+import {
+	FaArrowUp,
+	FaMicrophone,
+	FaPaperclip,
+	FaRobot,
+	FaTimes,
+	FaVolumeMute,
+	FaVolumeUp,
+} from "react-icons/fa";
 import { useAssistant } from "../AssistantContext";
 import styles from "./ChatPanel.module.css";
 
@@ -26,17 +34,44 @@ const connectionLabels = {
 };
 const MAX_RECONNECT_ATTEMPTS = 4;
 const INACTIVITY_MS = 2 * 60 * 1000;
+const MAX_FILES = 5;
+const MAX_FILE_BYTES = 2 * 1024 * 1024;
+
+const getChatCredentials = async () => {
+	const tokenResponse = await fetch("/api/chat/token", {
+		method: "POST",
+		headers: { Accept: "application/json" },
+		cache: "no-store",
+	});
+	const tokenPayload = await tokenResponse.json().catch(() => ({}));
+	if (!tokenResponse.ok || !tokenPayload.token || !tokenPayload.websocketUrl) {
+		throw new Error("Assistant connection is unavailable.");
+	}
+	return tokenPayload;
+};
 
 const ChatPanel = () => {
 	const { isAssistantOpen, closeAssistant } = useAssistant();
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("connecting");
+	const [attachments, setAttachments] = useState([]);
+	const [isUploading, setIsUploading] = useState(false);
+	const [isListening, setIsListening] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 	const [isUserActive, setIsUserActive] = useState(true);
+	const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(false);
 	const socketRef = useRef(null);
+	const fileInputRef = useRef(null);
+	const recognitionRef = useRef(null);
+	const voiceRepliesRef = useRef(false);
 	const messagesEndRef = useRef(null);
 	const inputRef = useRef(null);
+
+	useEffect(() => {
+		voiceRepliesRef.current = voiceRepliesEnabled;
+		if (!voiceRepliesEnabled) window.speechSynthesis?.cancel();
+	}, [voiceRepliesEnabled]);
 
 	useEffect(() => {
 		let inactivityTimer;
@@ -98,15 +133,7 @@ const ChatPanel = () => {
 			setConnectionState(attempts ? "offline" : "connecting");
 
 			try {
-				const tokenResponse = await fetch("/api/chat/token", {
-					method: "POST",
-					headers: { Accept: "application/json" },
-					cache: "no-store",
-				});
-				const tokenPayload = await tokenResponse.json().catch(() => ({}));
-				if (!tokenResponse.ok || !tokenPayload.token || !tokenPayload.websocketUrl) {
-					throw new Error("Assistant connection is unavailable.");
-				}
+				const tokenPayload = await getChatCredentials();
 
 				const websocketUrl = new URL(tokenPayload.websocketUrl);
 				websocketUrl.pathname = `${websocketUrl.pathname.replace(/\/$/, "")}/ws`;
@@ -138,6 +165,12 @@ const ChatPanel = () => {
 							...current,
 							{ id: payload.id || createId(), role: "assistant", text: payload.message },
 						]);
+						if (voiceRepliesRef.current && "speechSynthesis" in window) {
+							window.speechSynthesis.cancel();
+							const utterance = new SpeechSynthesisUtterance(payload.message);
+							utterance.lang = "en-IN";
+							window.speechSynthesis.speak(utterance);
+						}
 						return;
 					}
 					if (payload.type === "error" && typeof payload.message === "string") {
@@ -185,15 +218,111 @@ const ChatPanel = () => {
 		if (isAssistantOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, [isAssistantOpen, isTyping, messages]);
 
+	useEffect(() => {
+		if (isAssistantOpen) return;
+		recognitionRef.current?.stop();
+		window.speechSynthesis?.cancel();
+	}, [isAssistantOpen]);
+
+	const addClientError = (message) => {
+		setMessages((current) => [...current, { id: createId(), role: "error", text: message }]);
+	};
+
+	const handleFileSelection = async (event) => {
+		const selectedFiles = Array.from(event.target.files || []);
+		event.target.value = "";
+		if (selectedFiles.length === 0) return;
+		if (attachments.length + selectedFiles.length > MAX_FILES) {
+			addClientError("A chat session can contain at most five files.");
+			return;
+		}
+		if (selectedFiles.some((file) => file.size < 1 || file.size > MAX_FILE_BYTES)) {
+			addClientError("Each file must be no larger than 2 MiB.");
+			return;
+		}
+
+		setIsUploading(true);
+		try {
+			const credentials = await getChatCredentials();
+			const uploadUrl = new URL(credentials.websocketUrl);
+			uploadUrl.protocol = uploadUrl.protocol === "wss:" ? "https:" : "http:";
+			uploadUrl.pathname = `${uploadUrl.pathname.replace(/\/$/, "")}/upload`;
+			uploadUrl.search = "";
+			const body = new FormData();
+			selectedFiles.forEach((file) => body.append("files", file));
+			const uploadResponse = await fetch(uploadUrl, {
+				method: "POST",
+				headers: { Authorization: `Bearer ${credentials.token}` },
+				body,
+			});
+			const payload = await uploadResponse.json().catch(() => ({}));
+			if (!uploadResponse.ok || !Array.isArray(payload.files)) {
+				throw new Error(payload.error || "Files could not be stored.");
+			}
+			setAttachments((current) => [...current, ...payload.files].slice(0, MAX_FILES));
+		} catch (error) {
+			addClientError(error.message || "Files could not be stored.");
+		} finally {
+			setIsUploading(false);
+		}
+	};
+
+	const toggleListening = () => {
+		if (recognitionRef.current) {
+			recognitionRef.current.stop();
+			return;
+		}
+
+		const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+		if (!SpeechRecognition) {
+			addClientError("Voice input is not supported by this browser.");
+			return;
+		}
+
+		const recognition = new SpeechRecognition();
+		recognition.lang = "en-IN";
+		recognition.continuous = false;
+		recognition.interimResults = true;
+		recognition.onresult = (resultEvent) => {
+			const transcript = Array.from(resultEvent.results)
+				.map((result) => result[0]?.transcript || "")
+				.join(" ")
+				.trim();
+			setInput(transcript.slice(0, 500));
+		};
+		recognition.onerror = (errorEvent) => {
+			if (!["aborted", "no-speech"].includes(errorEvent.error)) addClientError("Voice input could not be started.");
+		};
+		recognition.onend = () => {
+			recognitionRef.current = null;
+			setIsListening(false);
+		};
+
+		try {
+			recognitionRef.current = recognition;
+			setIsListening(true);
+			recognition.start();
+		} catch {
+			recognitionRef.current = null;
+			setIsListening(false);
+			addClientError("Voice input could not be started.");
+		}
+	};
+
 	const sendMessage = (value) => {
-		const message = value.trim();
+		const message = value.trim() || (attachments.length ? "Please summarize the attached files." : "");
 		if (!message || message.length > 500 || connectionState !== "ready") return;
 		if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
 
 		setMessages((current) => [...current, { id: createId(), role: "user", text: message }]);
 		setInput("");
 		setIsTyping(true);
-		socketRef.current.send(JSON.stringify({ type: "chat", message }));
+		socketRef.current.send(JSON.stringify({
+			type: "chat",
+			message,
+			fileIds: attachments.map((file) => file.id),
+		}));
+		setAttachments([]);
 	};
 
 	if (!isAssistantOpen) return null;
@@ -214,8 +343,19 @@ const ChatPanel = () => {
 				</header>
 
 				<div className={styles.status} role="status" aria-live="polite">
-					<span className={`${styles.statusDot} ${connectionState === "ready" ? styles.online : ""}`} aria-hidden="true" />
-					{connectionLabels[connectionState]}
+					<span className={styles.connectionStatus}>
+						<span className={`${styles.statusDot} ${connectionState === "ready" ? styles.online : ""}`} aria-hidden="true" />
+						{connectionLabels[connectionState]}
+					</span>
+					<button
+						type="button"
+						className={`${styles.voiceToggle} ${voiceRepliesEnabled ? styles.activeControl : ""}`}
+						onClick={() => setVoiceRepliesEnabled((current) => !current)}
+						aria-label={voiceRepliesEnabled ? "Disable spoken replies" : "Enable spoken replies"}
+						title={voiceRepliesEnabled ? "Spoken replies on" : "Spoken replies off"}
+					>
+						{voiceRepliesEnabled ? <FaVolumeUp aria-hidden="true" /> : <FaVolumeMute aria-hidden="true" />}
+					</button>
 				</div>
 
 				<div className={styles.messages} aria-live="polite">
@@ -260,19 +400,71 @@ const ChatPanel = () => {
 						sendMessage(input);
 					}}
 				>
-					<label className={styles.srOnly} htmlFor="assistant-message">Ask a portfolio question</label>
 					<input
-						id="assistant-message"
-						ref={inputRef}
-						value={input}
-						onChange={(event) => setInput(event.target.value)}
-						placeholder={connectionState === "ready" ? "Ask about experience or projects" : "Connecting to assistant"}
-						maxLength={500}
-						autoComplete="off"
+						ref={fileInputRef}
+						className={styles.fileInput}
+						type="file"
+						accept=".pdf,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp"
+						multiple
+						onChange={handleFileSelection}
+						tabIndex={-1}
 					/>
-					<button type="submit" disabled={!input.trim() || connectionState !== "ready" || isTyping} aria-label="Send message">
-						<FaArrowUp aria-hidden="true" />
-					</button>
+					{attachments.length > 0 && (
+						<div className={styles.attachments} aria-label="Attached files">
+							{attachments.map((file) => (
+								<span className={styles.attachment} key={file.id}>
+									<span title={file.name}>{file.name}</span>
+									<button
+										type="button"
+										onClick={() => setAttachments((current) => current.filter((item) => item.id !== file.id))}
+										aria-label={`Remove ${file.name}`}
+									>
+										<FaTimes aria-hidden="true" />
+									</button>
+								</span>
+							))}
+						</div>
+					)}
+					{isUploading && <p className={styles.uploadStatus}>Encrypting and storing files...</p>}
+					<div className={styles.composerRow}>
+						<button
+							type="button"
+							className={styles.toolButton}
+							onClick={() => fileInputRef.current?.click()}
+							disabled={isUploading || attachments.length >= MAX_FILES}
+							aria-label="Attach files"
+							title="Attach up to 5 files, 2 MiB each"
+						>
+							<FaPaperclip aria-hidden="true" />
+						</button>
+						<label className={styles.srOnly} htmlFor="assistant-message">Ask a portfolio question</label>
+						<input
+							id="assistant-message"
+							ref={inputRef}
+							value={input}
+							onChange={(event) => setInput(event.target.value)}
+							placeholder={connectionState === "ready" ? "Ask about experience or projects" : "Connecting to assistant"}
+							maxLength={500}
+							autoComplete="off"
+						/>
+						<button
+							type="button"
+							className={`${styles.toolButton} ${isListening ? styles.activeControl : ""}`}
+							onClick={toggleListening}
+							aria-label={isListening ? "Stop voice input" : "Start voice input"}
+							title={isListening ? "Stop listening" : "Use microphone"}
+						>
+							<FaMicrophone aria-hidden="true" />
+						</button>
+						<button
+							type="submit"
+							className={styles.sendButton}
+							disabled={(!input.trim() && attachments.length === 0) || connectionState !== "ready" || isTyping || isUploading}
+							aria-label="Send message"
+						>
+							<FaArrowUp aria-hidden="true" />
+						</button>
+					</div>
 				</form>
 		</aside>
 	);

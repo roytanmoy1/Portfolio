@@ -38,6 +38,27 @@ await sql`
 `;
 
 await sql`
+	CREATE TABLE IF NOT EXISTS chat_uploads (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		session_id UUID NOT NULL,
+		original_name VARCHAR(120) NOT NULL,
+		mime_type VARCHAR(64) NOT NULL,
+		size_bytes INTEGER NOT NULL CHECK (size_bytes BETWEEN 1 AND 2097152),
+		sha256 CHAR(64) NOT NULL,
+		encrypted_content BYTEA NOT NULL,
+		encryption_iv BYTEA NOT NULL CHECK (OCTET_LENGTH(encryption_iv) = 12),
+		encryption_tag BYTEA NOT NULL CHECK (OCTET_LENGTH(encryption_tag) = 16),
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '24 hours'
+	)
+`;
+
+await sql`
+	CREATE INDEX IF NOT EXISTS chat_uploads_session_expires_idx
+		ON chat_uploads (session_id, expires_at DESC)
+`;
+
+await sql`
 	INSERT INTO portfolio_content (content_key, content, updated_at)
 	VALUES ('portfolio', ${content}::jsonb, NOW())
 	ON CONFLICT (content_key)
