@@ -38,6 +38,15 @@
 	width: min(1280px, calc(100% - 2rem));
 	margin: 0 auto;
 	padding-top: 7.5rem;
+	transition: width 240ms ease, margin 240ms ease;
+}
+
+@media (min-width: 1101px) {
+	.assistantOpen .main {
+		width: min(1280px, calc(80vw - 3rem));
+		margin-right: calc(20vw + 2rem);
+		margin-left: auto;
+	}
 }
 
 .skipLink {

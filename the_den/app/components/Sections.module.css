@@ -383,18 +383,27 @@
 	background: var(--bg-deep);
 }
 
+.locationMap::after {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(135deg, rgba(13, 12, 11, 0.08), rgba(13, 12, 11, 0.42));
+	content: "";
+	pointer-events: none;
+}
+
 .locationMap iframe {
 	display: block;
 	width: 100%;
 	height: 8.5rem;
 	border: 0;
-	filter: saturate(0.72) contrast(1.06);
+	filter: grayscale(0.2) saturate(0.65) brightness(0.62) contrast(1.22);
 }
 
 .locationCaption {
 	position: absolute;
 	bottom: 0.55rem;
 	left: 0.55rem;
+	z-index: 1;
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;

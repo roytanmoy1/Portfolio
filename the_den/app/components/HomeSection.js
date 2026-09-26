@@ -108,7 +108,7 @@ const HomeSection = ({ id }) => {
 							<div className={styles.locationMap}>
 								<iframe
 									title="Map showing Bengaluru, India"
-									src="https://www.google.com/maps?q=Bengaluru%2C%20India&z=11&output=embed"
+									src="https://www.google.com/maps?q=Bengaluru%2C%20India&z=11&t=k&output=embed"
 									loading="lazy"
 									referrerPolicy="no-referrer-when-downgrade"
 									allowFullScreen

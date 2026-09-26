@@ -22,8 +22,10 @@ const connectionLabels = {
 	ready: "Online",
 	offline: "Reconnecting",
 	unavailable: "Unavailable",
+	paused: "Paused while inactive",
 };
 const MAX_RECONNECT_ATTEMPTS = 4;
+const INACTIVITY_MS = 2 * 60 * 1000;
 
 const ChatPanel = () => {
 	const { isAssistantOpen, closeAssistant } = useAssistant();
@@ -31,12 +33,49 @@ const ChatPanel = () => {
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("connecting");
 	const [isTyping, setIsTyping] = useState(false);
+	const [isUserActive, setIsUserActive] = useState(true);
 	const socketRef = useRef(null);
 	const messagesEndRef = useRef(null);
 	const inputRef = useRef(null);
 
 	useEffect(() => {
-		if (!isAssistantOpen) return undefined;
+		let inactivityTimer;
+
+		const markActive = () => {
+			if (document.visibilityState === "hidden") return;
+			setIsUserActive(true);
+			window.clearTimeout(inactivityTimer);
+			inactivityTimer = window.setTimeout(() => setIsUserActive(false), INACTIVITY_MS);
+		};
+		const handleVisibility = () => {
+			if (document.visibilityState === "hidden") {
+				window.clearTimeout(inactivityTimer);
+				setIsUserActive(false);
+			} else {
+				markActive();
+			}
+		};
+
+		markActive();
+		document.addEventListener("pointerdown", markActive, { passive: true });
+		document.addEventListener("keydown", markActive);
+		document.addEventListener("visibilitychange", handleVisibility);
+		window.addEventListener("scroll", markActive, { passive: true });
+
+		return () => {
+			window.clearTimeout(inactivityTimer);
+			document.removeEventListener("pointerdown", markActive);
+			document.removeEventListener("keydown", markActive);
+			document.removeEventListener("visibilitychange", handleVisibility);
+			window.removeEventListener("scroll", markActive);
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!isUserActive) {
+			setConnectionState("paused");
+			return undefined;
+		}
 
 		let disposed = false;
 		let socket;
@@ -128,9 +167,9 @@ const ChatPanel = () => {
 			disposed = true;
 			window.clearTimeout(reconnectTimer);
 			if (socketRef.current === socket) socketRef.current = null;
-			socket?.close(1000, "Panel closed");
+			socket?.close(1000, "Connection paused");
 		};
-	}, [isAssistantOpen]);
+	}, [isUserActive]);
 
 	useEffect(() => {
 		if (!isAssistantOpen) return undefined;
@@ -160,9 +199,7 @@ const ChatPanel = () => {
 	if (!isAssistantOpen) return null;
 
 	return (
-		<>
-			<button className={styles.backdrop} type="button" onClick={closeAssistant} aria-label="Close portfolio assistant" />
-			<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label="Tanmoy portfolio assistant">
+		<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label="Tanmoy portfolio assistant">
 				<header className={styles.header}>
 					<div className={styles.identity}>
 						<span className={styles.botIcon} aria-hidden="true"><FaRobot /></span>
@@ -237,8 +274,7 @@ const ChatPanel = () => {
 						<FaArrowUp aria-hidden="true" />
 					</button>
 				</form>
-			</aside>
-		</>
+		</aside>
 	);
 };
 
