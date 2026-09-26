@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test:chat": "node scripts/test-chat-security.mjs",
     "test:chat-schema": "node scripts/verify-chat-schema.mjs",
+    "test:chat-storage": "node scripts/verify-chat-storage.mjs",
     "test:contact": "node scripts/test-contact-smtp.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
