@@ -1,8 +1,9 @@
 .sectionNav {
-	position: fixed;
-	top: 50%;
-	right: 1rem;
-	z-index: 900;
+	position: sticky;
+	top: 7.5rem;
+	align-self: start;
+	width: 3rem;
+	margin-top: 7.5rem;
 	padding: 0.75rem 0.55rem;
 	border: 1px solid var(--glass-border);
 	border-radius: 1rem;
@@ -10,17 +11,52 @@
 	box-shadow: var(--shadow-glass);
 	-webkit-backdrop-filter: blur(18px) saturate(145%);
 	backdrop-filter: blur(18px) saturate(145%);
-	transform: translateY(-50%);
+	overflow: hidden;
+	transition: width 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.sectionNav.expanded {
+	width: 13rem;
+}
+
+.navToggle {
+	display: grid;
+	place-items: center;
+	width: 1.8rem;
+	height: 1.8rem;
+	margin: 0 auto 0.55rem;
+	padding: 0;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.55rem;
+	background: var(--glass-soft);
+	color: var(--accent-color);
+	cursor: pointer;
+	transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.navToggle:hover,
+.navToggle:focus-visible {
+	background: var(--accent-transparent);
+	color: var(--text-primary);
+	transform: translateY(-1px);
 }
 
 .navLabel {
 	display: block;
 	margin: 0.15rem 0.45rem 0.65rem;
+	overflow: hidden;
 	color: var(--text-subtle);
 	font-size: 0.55rem;
 	font-weight: 850;
 	letter-spacing: 0.13em;
 	text-transform: uppercase;
+	white-space: nowrap;
+	opacity: 0;
+	transition: opacity 180ms ease;
+}
+
+.sectionNav.expanded .navLabel {
+	opacity: 1;
 }
 
 .navList {
@@ -34,8 +70,9 @@
 .navLink {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 0.55rem;
-	min-width: 5.8rem;
+	min-width: 0;
 	padding: 0.5rem 0.45rem;
 	border: 1px solid transparent;
 	border-radius: 0.65rem;
@@ -44,6 +81,33 @@
 	font-weight: 750;
 	transition: color 180ms ease, background 180ms ease, border-color 180ms ease,
 		transform 180ms ease;
+}
+
+.navText {
+	width: 0;
+	overflow: hidden;
+	opacity: 0;
+	white-space: nowrap;
+	transition: width 180ms ease, opacity 180ms ease;
+}
+
+.sectionNav.expanded .navLink {
+	justify-content: flex-start;
+	min-width: 10.8rem;
+}
+
+.sectionNav.expanded .navText {
+	width: auto;
+	opacity: 1;
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
 }
 
 .navDot {

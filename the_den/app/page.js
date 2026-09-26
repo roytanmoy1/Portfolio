@@ -19,16 +19,18 @@ export default function Home() {
 				Skip to main content
 			</a>
 			<Header />
-			<main id="main-content" className={styles.main}>
-				<HomeSection id="home" />
-				<AboutSection id="about" />
-				<ExperienceSection id="experience" />
-				<SkillsSection id="skills" />
-				<ProjectsSection id="projects" />
-				<LabSection id="lab" />
-				<ContactSection id="contact" />
-			</main>
-			<SectionNav />
+			<div className={styles.contentShell}>
+				<main id="main-content" className={styles.main}>
+					<HomeSection id="home" />
+					<AboutSection id="about" />
+					<ExperienceSection id="experience" />
+					<SkillsSection id="skills" />
+					<ProjectsSection id="projects" />
+					<LabSection id="lab" />
+					<ContactSection id="contact" />
+				</main>
+				<SectionNav />
+			</div>
 		</div>
 	);
 }
