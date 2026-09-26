@@ -1,6 +1,6 @@
 # Tanmoy Kumar Roy — Portfolio
 
-A data-driven Next.js portfolio with a glassmorphism interface, responsive navigation, theme switching, project filtering, resume download, and an optional contact form provider.
+A data-driven Next.js portfolio with a glassmorphism interface, responsive navigation, theme switching, project filtering, resume download, and direct SMTP contact delivery.
 
 ## Run locally
 
@@ -20,9 +20,23 @@ npm run start
 
 ## Contact form
 
-The form posts to the server route at `/api/contact`. Set the server-only `FORMSPREE_ENDPOINT` in `.env.local` to a verified Formspree endpoint. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before storing and forwarding the message. If delivery is not configured, the form reports an error without opening another application.
+The form posts to the server route at `/api/contact`. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before storing the message in Neon and sending it through authenticated SMTP. The visitor address is used as `Reply-To`; the authenticated mailbox remains the sender so SPF and DMARC checks are preserved.
 
-Never commit `.env.local` or provider credentials.
+For Gmail, enable 2-Step Verification, create an app password, and set these server-only values in `.env.local` and Vercel:
+
+```dotenv
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-16-character-app-password
+SMTP_FROM_EMAIL=you@gmail.com
+CONTACT_TO_EMAIL=you@gmail.com
+```
+
+Use the mailbox address for `SMTP_FROM_EMAIL`. `CONTACT_TO_EMAIL` may be any inbox that should receive portfolio enquiries. If SMTP rejects a delivery, the form reports an error while the validated submission remains retained in Neon.
+
+Never commit `.env.local`, mailbox passwords, or app passwords.
 
 ## Deployment
 
@@ -35,8 +49,9 @@ To deploy the updated version on Vercel:
 3. Use the default Next.js build settings.
 4. Add `NEXT_PUBLIC_SITE_URL` with the final public URL.
 5. Add the server-only `DATABASE_URL` from Neon.
-6. Add the server-only `FORMSPREE_ENDPOINT` for direct email delivery.
-7. Deploy and verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, and the resume download.
+6. Add the server-only SMTP variables from the contact-form section.
+7. Deploy and submit a real test message before relying on the form.
+8. Verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, and the resume download.
 
 ## Data and database
 

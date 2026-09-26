@@ -155,10 +155,10 @@
 
 @media (max-width: 900px) {
 	.header {
-		top: 0.5rem;
-		min-height: 3.5rem;
+		top: 0.4rem;
+		min-height: 3.25rem;
 		width: calc(100% - 1rem);
-		padding: 0.4rem 0.45rem 0.4rem 0.6rem;
+		padding: 0.3rem 0.35rem 0.3rem 0.5rem;
 	}
 
 	.hamburger {
@@ -166,17 +166,19 @@
 	}
 
 	.nav {
-		position: fixed;
-		top: calc(100% + 0.4rem);
+		position: absolute;
+		top: calc(100% + 0.35rem);
 		right: 0;
-		width: min(16rem, calc(100vw - 1rem));
-		padding: 0.45rem;
+		width: min(17rem, calc(100vw - 1rem));
+		max-height: calc(100dvh - 4.5rem);
+		padding: 0.35rem;
 		border: 1px solid var(--glass-border);
-		border-radius: 0.9rem;
+		border-radius: 0.8rem;
 		background: var(--glass-heavy);
 		box-shadow: var(--shadow-glass);
 		-webkit-backdrop-filter: blur(24px) saturate(150%);
 		backdrop-filter: blur(24px) saturate(150%);
+		overflow-y: auto;
 		opacity: 0;
 		visibility: hidden;
 		pointer-events: none;
@@ -193,23 +195,23 @@
 	}
 
 	.nav ul {
-		align-items: stretch;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.15rem;
 	}
 
 	.nav a {
 		justify-content: flex-start;
-		min-height: 2.5rem;
-		padding: 0 0.75rem;
-		font-size: 0.75rem;
+		min-height: 2.35rem;
+		padding: 0 0.65rem;
+		font-size: 0.72rem;
 	}
 
 	.themeToggle,
 	.hamburger {
-		width: 2.4rem;
-		height: 2.4rem;
-		border-radius: 0.7rem;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 0.65rem;
 		font-size: 0.85rem;
 	}
 
@@ -220,8 +222,7 @@
 
 @media (max-width: 520px) {
 	.header {
-		min-height: 3.35rem;
-		padding-left: 0.5rem;
+		min-height: 3.1rem;
 	}
 
 	.logoText small {
@@ -229,15 +230,12 @@
 	}
 
 	.logoMark {
-		width: 2.15rem;
-		height: 2.15rem;
+		width: 2rem;
+		height: 2rem;
 	}
 
 	.logoText strong {
 		font-size: 0.85rem;
 	}
 
-	.nav {
-		top: calc(100% + 0.35rem);
-	}
 }

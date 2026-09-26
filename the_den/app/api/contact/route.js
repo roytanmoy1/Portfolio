@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendContactEmail } from "../../lib/contactMailer";
 import { getDatabase } from "../../lib/neon";
 
 export const runtime = "nodejs";
@@ -20,20 +21,6 @@ const response = (body, status) =>
 	});
 
 const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
-
-const getFormspreeEndpoint = () => {
-	const endpoint = cleanText(process.env.FORMSPREE_ENDPOINT);
-	if (!endpoint || endpoint.includes("your-verified-form-id")) return null;
-
-	try {
-		const url = new URL(endpoint);
-		return url.protocol === "https:" && url.hostname === "formspree.io" && /^\/f\/[A-Za-z0-9]+$/.test(url.pathname)
-			? url.href
-			: null;
-	} catch {
-		return null;
-	}
-};
 
 export async function POST(request) {
 	const address = (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown")
@@ -82,7 +69,7 @@ export async function POST(request) {
 		return response({ error: "Invalid form payload." }, 400);
 	}
 
-	const name = cleanText(payload.name);
+	const name = cleanText(payload.name).replace(/\s+/g, " ");
 	const email = cleanText(payload.email).toLowerCase();
 	const message = cleanText(payload.message);
 	const honeypot = cleanText(payload.company);
@@ -117,28 +104,10 @@ export async function POST(request) {
 		}
 	}
 
-	const endpoint = getFormspreeEndpoint();
-	if (!endpoint) {
-		return response({ error: "Email delivery is not configured." }, 503);
-	}
-
 	try {
-		const delivery = await fetch(endpoint, {
-			method: "POST",
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				name,
-				email,
-				message,
-				_subject: `Portfolio enquiry from ${name}`,
-			}),
-			cache: "no-store",
-		});
-
-		if (!delivery.ok) return response({ error: "Email delivery failed." }, 502);
+		const delivery = await sendContactEmail({ name, email, message });
+		if (!delivery.configured) return response({ error: "Email delivery is not configured." }, 503);
+		if (!delivery.accepted) return response({ error: "Email delivery failed." }, 502);
 		return response({ ok: true }, 200);
 	} catch {
 		return response({ error: "Email delivery is temporarily unavailable." }, 502);
