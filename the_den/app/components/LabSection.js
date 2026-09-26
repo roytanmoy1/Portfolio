@@ -3,9 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaGithub, FaExternalLinkAlt, FaCode, FaChartLine } from "react-icons/fa";
 import styles from "./Sections.module.css";
+import SortableGrid from "./SortableGrid";
 import { portfolioData } from "../data/portfolioData";
 
 const githubApiUrl = "https://api.github.com/users/roytanmoy1/repos?per_page=100&sort=updated";
+const personalProjects = portfolioData.personalProjects.map((project) => ({
+	...project,
+	id: project.repo,
+	label: project.title,
+}));
 
 const normalizeExternalUrl = (value) => {
 	if (typeof value !== "string" || !value.trim()) return "";
@@ -134,9 +140,12 @@ const LabSection = ({ id }) => {
 							</a>
 						</div>
 
-						<div className={styles.personalProjectGrid}>
-							{portfolioData.personalProjects.map((project) => (
-								<article className={styles.personalProjectCard} key={project.repo}>
+						<SortableGrid
+							items={personalProjects}
+							className={styles.personalProjectGrid}
+							storageKey="portfolio-project-order"
+							renderItem={(project) => (
+								<article className={styles.personalProjectCard}>
 									<div className={styles.projectPreview}>
 										{project.liveUrl ? (
 											<div className={styles.previewPlaceholder}>
@@ -174,8 +183,8 @@ const LabSection = ({ id }) => {
 										)}
 									</div>
 								</article>
-							))}
-						</div>
+							)}
+						/>
 					</div>
 				</div>
 

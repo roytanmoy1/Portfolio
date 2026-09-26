@@ -722,7 +722,7 @@
 }
 
 .skillCategory {
-	padding: 1.3rem;
+	padding: 1.3rem 3.6rem 1.3rem 1.3rem;
 	border: 1px solid var(--glass-border);
 	border-radius: 1.35rem;
 	background: linear-gradient(145deg, var(--glass-highlight), transparent 30%), var(--glass);

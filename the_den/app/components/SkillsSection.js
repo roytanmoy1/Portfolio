@@ -1,5 +1,14 @@
+"use client";
+
 import styles from "./Sections.module.css";
+import SortableGrid from "./SortableGrid";
 import { portfolioData } from "../data/portfolioData";
+
+const skillGroups = portfolioData.skills.map((group) => ({
+	...group,
+	id: group.category,
+	label: group.category,
+}));
 
 const SkillsSection = ({ id }) => {
 	return (
@@ -14,9 +23,12 @@ const SkillsSection = ({ id }) => {
 					</p>
 				</div>
 
-				<div className={styles.skillsContainer}>
-					{portfolioData.skills.map((group) => (
-						<section className={styles.skillCategory} key={group.category}>
+				<SortableGrid
+					items={skillGroups}
+					className={styles.skillsContainer}
+					storageKey="portfolio-skill-order"
+					renderItem={(group) => (
+						<section className={styles.skillCategory}>
 							<div className={styles.skillCategoryHeader}>
 								<span className={styles.skillCategoryIcon} aria-hidden="true">{group.icon}</span>
 								<h3 className={styles.categoryTitle}>{group.category}</h3>
@@ -32,8 +44,8 @@ const SkillsSection = ({ id }) => {
 								))}
 							</div>
 						</section>
-					))}
-				</div>
+					)}
+				/>
 			</div>
 		</section>
 	);

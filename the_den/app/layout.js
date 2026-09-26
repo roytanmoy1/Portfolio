@@ -4,17 +4,6 @@ import { ThemeProvider } from "./ThemeContext";
 import { portfolioData } from "./data/portfolioData";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tanmoyroy.vercel.app";
-const themeScript = `
-(() => {
-  try {
-    const saved = localStorage.getItem("darkMode");
-    const dark = saved === null ? true : saved === "true";
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.classList.toggle("light", !dark);
-  } catch {
-    document.documentElement.classList.add("dark");
-  }
-})();`;
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -107,7 +96,6 @@ export default function RootLayout({ children }) {
   return (
 		<html lang="en" className="dark" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
 			<body className={`${geistSans.variable} ${geistMono.variable}`}>

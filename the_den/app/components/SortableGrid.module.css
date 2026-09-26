@@ -1,0 +1,68 @@
+.item {
+	position: relative;
+	min-width: 0;
+	height: 100%;
+	will-change: transform;
+}
+
+.item > article,
+.item > section {
+	height: 100%;
+}
+
+.handle {
+	position: absolute;
+	top: 0.65rem;
+	right: 0.65rem;
+	z-index: 3;
+	display: grid;
+	place-items: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.65rem;
+	background: var(--glass-heavy);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+	color: var(--text-muted);
+	cursor: grab;
+	touch-action: none;
+	transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.handle:hover,
+.handle:focus-visible {
+	transform: translateY(-1px);
+	border-color: var(--accent-border);
+	color: var(--accent-color);
+}
+
+.handle:active {
+	cursor: grabbing;
+}
+
+.dragging {
+	z-index: 20;
+	opacity: 0.9;
+}
+
+.dragging > article,
+.dragging > section {
+	transform: none;
+	border-color: var(--accent-border);
+	box-shadow: 0 28px 70px rgba(0, 0, 0, 0.34);
+}
+
+@media (max-width: 520px) {
+	.handle {
+		top: 0.5rem;
+		right: 0.5rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.item,
+	.handle {
+		transition: none !important;
+	}
+}
