@@ -431,6 +431,7 @@ const ChatPanel = () => {
 							/>
 							{nameError && <span className={styles.nameError} role="alert">{nameError}</span>}
 							<button type="submit" disabled={draftName.trim().length < 2}>Continue</button>
+							<small className={styles.retentionNote}>Your name and chat are retained for 90 days. Don&apos;t share sensitive information.</small>
 						</form>
 					) : (
 						<>

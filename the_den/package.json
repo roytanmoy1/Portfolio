@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test:chat": "node scripts/test-chat-security.mjs",
+    "test:chat-audit": "node scripts/verify-chat-audit.mjs",
     "test:chat-schema": "node scripts/verify-chat-schema.mjs",
     "test:chat-storage": "node scripts/verify-chat-storage.mjs",
     "test:contact": "node scripts/test-contact-smtp.mjs",
