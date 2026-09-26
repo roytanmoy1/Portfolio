@@ -36,6 +36,11 @@ const MAX_RECONNECT_ATTEMPTS = 4;
 const INACTIVITY_MS = 2 * 60 * 1000;
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
+const formatFileSize = (bytes) => {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+	return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
 
 const getChatCredentials = async () => {
 	const tokenResponse = await fetch("/api/chat/token", {
@@ -56,7 +61,10 @@ const ChatPanel = () => {
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("connecting");
 	const [attachments, setAttachments] = useState([]);
+	const [pendingFiles, setPendingFiles] = useState([]);
 	const [draftName, setDraftName] = useState("");
+	const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+	const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
 	const [isListening, setIsListening] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
@@ -211,13 +219,19 @@ const ChatPanel = () => {
 	useEffect(() => {
 		if (!isAssistantOpen) return undefined;
 		const handleKeyDown = (event) => {
-			if (event.key === "Escape") closeAssistant();
+			if (event.key !== "Escape") return;
+			if (isUploadDialogOpen) {
+				setIsUploadDialogOpen(false);
+				setPendingFiles([]);
+			} else {
+				closeAssistant();
+			}
 		};
 		document.addEventListener("keydown", handleKeyDown);
 		if (visitorName) inputRef.current?.focus();
 		else nameInputRef.current?.focus();
 		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [closeAssistant, isAssistantOpen, visitorName]);
+	}, [closeAssistant, isAssistantOpen, isUploadDialogOpen, visitorName]);
 
 	useEffect(() => {
 		if (isAssistantOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -227,6 +241,8 @@ const ChatPanel = () => {
 		if (isAssistantOpen) return;
 		recognitionRef.current?.stop();
 		window.speechSynthesis?.cancel();
+		setIsUploadDialogOpen(false);
+		setPendingFiles([]);
 	}, [isAssistantOpen]);
 
 	const addClientError = (message) => {
@@ -244,18 +260,34 @@ const ChatPanel = () => {
 		setVisitorName(name);
 	};
 
-	const handleFileSelection = async (event) => {
-		const selectedFiles = Array.from(event.target.files || []);
-		event.target.value = "";
+	const stageFiles = (files) => {
+		const selectedFiles = Array.from(files || []);
 		if (selectedFiles.length === 0) return;
-		if (attachments.length + selectedFiles.length > MAX_FILES) {
+		if (attachments.length + pendingFiles.length + selectedFiles.length > MAX_FILES) {
 			addClientError("A chat session can contain at most five files.");
+			return;
+		}
+		if (selectedFiles.some((file) => !/\.(?:pdf|txt|xlsx)$/i.test(file.name))) {
+			addClientError("Only PDF, TXT, and XLSX files are supported.");
 			return;
 		}
 		if (selectedFiles.some((file) => file.size < 1 || file.size > MAX_FILE_BYTES)) {
 			addClientError("Each file must be no larger than 2 MiB.");
 			return;
 		}
+		setPendingFiles((current) => {
+			const known = new Set(current.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
+			return [...current, ...selectedFiles.filter((file) => !known.has(`${file.name}:${file.size}:${file.lastModified}`))];
+		});
+	};
+
+	const handleFileSelection = (event) => {
+		stageFiles(event.target.files);
+		event.target.value = "";
+	};
+
+	const savePendingFiles = async () => {
+		if (pendingFiles.length === 0) return;
 
 		setIsUploading(true);
 		try {
@@ -265,7 +297,7 @@ const ChatPanel = () => {
 			uploadUrl.pathname = `${uploadUrl.pathname.replace(/\/$/, "")}/upload`;
 			uploadUrl.search = "";
 			const body = new FormData();
-			selectedFiles.forEach((file) => body.append("files", file));
+			pendingFiles.forEach((file) => body.append("files", file));
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "POST",
 				headers: { Authorization: `Bearer ${credentials.token}` },
@@ -276,6 +308,8 @@ const ChatPanel = () => {
 				throw new Error(payload.error || "Files could not be stored.");
 			}
 			setAttachments((current) => [...current, ...payload.files].slice(0, MAX_FILES));
+			setPendingFiles([]);
+			setIsUploadDialogOpen(false);
 		} catch (error) {
 			addClientError(error.message || "Files could not be stored.");
 		} finally {
@@ -436,6 +470,94 @@ const ChatPanel = () => {
 					</div>
 				)}
 
+				{visitorName && isUploadDialogOpen && (
+					<div className={styles.uploadOverlay}>
+						<div className={styles.uploadDialog} role="dialog" aria-modal="true" aria-labelledby="upload-title">
+							<div className={styles.uploadHeader}>
+								<div>
+									<h3 id="upload-title">Attach files</h3>
+									<p>PDF, TXT, or XLSX · 2 MiB each · 5 total</p>
+								</div>
+								<button
+									type="button"
+									onClick={() => {
+										setIsUploadDialogOpen(false);
+										setPendingFiles([]);
+									}}
+									aria-label="Close file dialog"
+								>
+									<FaTimes aria-hidden="true" />
+								</button>
+							</div>
+
+							<button
+								type="button"
+								className={`${styles.dropzone} ${isDraggingFiles ? styles.dragActive : ""}`}
+								onClick={() => fileInputRef.current?.click()}
+								onDragEnter={(event) => {
+									event.preventDefault();
+									setIsDraggingFiles(true);
+								}}
+								onDragOver={(event) => event.preventDefault()}
+								onDragLeave={() => setIsDraggingFiles(false)}
+								onDrop={(event) => {
+									event.preventDefault();
+									setIsDraggingFiles(false);
+									stageFiles(event.dataTransfer.files);
+								}}
+							>
+								<FaPaperclip aria-hidden="true" />
+								<strong>Choose files</strong>
+								<span>or drop them here</span>
+							</button>
+
+							<div className={styles.fileReview}>
+								{attachments.length > 0 && (
+									<div>
+										<h4>Saved for next message</h4>
+										{attachments.map((file) => (
+											<div className={styles.reviewFile} key={file.id}>
+												<span><strong>{file.name}</strong><small>{formatFileSize(file.size)}</small></span>
+												<button type="button" onClick={() => setAttachments((current) => current.filter((item) => item.id !== file.id))} aria-label={`Remove ${file.name}`}>
+													<FaTimes aria-hidden="true" />
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+								<div>
+									<h4>Ready to upload</h4>
+									{pendingFiles.length === 0 ? (
+										<p className={styles.emptyFiles}>No files selected.</p>
+									) : pendingFiles.map((file) => (
+										<div className={styles.reviewFile} key={`${file.name}:${file.size}:${file.lastModified}`}>
+											<span><strong>{file.name}</strong><small>{formatFileSize(file.size)}</small></span>
+											<button type="button" onClick={() => setPendingFiles((current) => current.filter((item) => item !== file))} aria-label={`Remove ${file.name}`}>
+												<FaTimes aria-hidden="true" />
+											</button>
+										</div>
+									))}
+								</div>
+							</div>
+
+							<div className={styles.uploadActions}>
+								<button
+									type="button"
+									onClick={() => {
+										setIsUploadDialogOpen(false);
+										setPendingFiles([]);
+									}}
+								>
+									Cancel
+								</button>
+								<button type="button" onClick={savePendingFiles} disabled={pendingFiles.length === 0 || isUploading}>
+									{isUploading ? "Saving..." : "Save files"}
+								</button>
+							</div>
+						</div>
+					</div>
+				)}
+
 				{visitorName && <form
 					className={styles.composer}
 					onSubmit={(event) => {
@@ -473,8 +595,8 @@ const ChatPanel = () => {
 						<button
 							type="button"
 							className={styles.toolButton}
-							onClick={() => fileInputRef.current?.click()}
-							disabled={isUploading || attachments.length >= MAX_FILES}
+							onClick={() => setIsUploadDialogOpen(true)}
+							disabled={isUploading}
 							aria-label="Attach files"
 							title="Attach up to 5 PDF, TXT, or XLSX files, 2 MiB each"
 						>

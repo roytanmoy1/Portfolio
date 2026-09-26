@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { portfolioData } from "../app/data/portfolioData.js";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!databaseUrl) {
 	throw new Error("DATABASE_URL is required to seed Neon.");
 }
@@ -56,6 +56,31 @@ await sql`
 await sql`
 	CREATE INDEX IF NOT EXISTS chat_uploads_session_expires_idx
 		ON chat_uploads (session_id, expires_at DESC)
+`;
+
+await sql`
+	CREATE TABLE IF NOT EXISTS chat_messages (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		session_id UUID NOT NULL,
+		visitor_name VARCHAR(60) NOT NULL,
+		question VARCHAR(500) NOT NULL,
+		response VARCHAR(1800) NOT NULL,
+		status VARCHAR(16) NOT NULL CHECK (status IN ('answered', 'refused', 'error')),
+		model VARCHAR(64),
+		attachment_count SMALLINT NOT NULL DEFAULT 0 CHECK (attachment_count BETWEEN 0 AND 5),
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '90 days'
+	)
+`;
+
+await sql`
+	CREATE INDEX IF NOT EXISTS chat_messages_created_at_idx
+		ON chat_messages (created_at DESC)
+`;
+
+await sql`
+	CREATE INDEX IF NOT EXISTS chat_messages_session_created_idx
+		ON chat_messages (session_id, created_at DESC)
 `;
 
 await sql`

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { attachDatabasePool, upgradeWebSocket } from "@neon/functions";
+import { attachDatabasePool, upgradeWebSocket, waitUntil } from "@neon/functions";
 import { jwtVerify } from "jose";
 import { Pool } from "pg";
 import { portfolioData } from "../app/data/portfolioData.js";
@@ -18,8 +18,10 @@ import {
 	MAX_CHAT_INPUT_LENGTH,
 	PORTFOLIO_ONLY_REFUSAL,
 	buildPublicPortfolioContext,
+	getDirectPortfolioResponse,
 	getGuardrailRefusal,
 	normalizeChatMessage,
+	redactChatLogText,
 	sanitizeAssistantOutput,
 } from "../app/lib/chatSecurity.js";
 import { CHAT_TOKEN_AUDIENCE, CHAT_TOKEN_ISSUER, getChatTokenKey } from "../app/lib/chatToken.js";
@@ -75,6 +77,29 @@ process.on("SIGINT", () => clearInterval(heartbeat));
 
 const send = (socket, payload) => {
 	if (socket.readyState === 1) socket.send(JSON.stringify(payload));
+};
+
+const recordChatAudit = ({ sessionId, visitorName, question, response, status, model, attachmentCount }) => {
+	const task = pool.query(
+		`WITH cleanup AS (
+			DELETE FROM chat_messages WHERE expires_at <= NOW()
+		)
+		INSERT INTO chat_messages
+			(session_id, visitor_name, question, response, status, model, attachment_count)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		[
+			sessionId,
+			redactChatLogText(visitorName).slice(0, 60),
+			redactChatLogText(question).slice(0, 500),
+			redactChatLogText(response).slice(0, 1800),
+			status,
+			model,
+			attachmentCount,
+		]
+	).catch((error) => {
+		console.error("Portfolio chat audit write failed.", { code: typeof error?.code === "string" ? error.code : "UNKNOWN" });
+	});
+	waitUntil(task);
 };
 
 const getCorsHeaders = (origin) => ({
@@ -312,6 +337,32 @@ const handleMessage = async (socket, state, event) => {
 	});
 	if (refusal) {
 		send(socket, { type: "assistant", id: randomUUID(), message: refusal });
+		recordChatAudit({
+			sessionId: state.identity,
+			visitorName: state.visitorName,
+			question: message,
+			response: refusal,
+			status: "refused",
+			model: "deterministic",
+			attachmentCount: fileIds.length,
+		});
+		return;
+	}
+	const directResponse = getDirectPortfolioResponse(message, {
+		visitorName: state.visitorName,
+		portfolioData,
+	});
+	if (directResponse) {
+		send(socket, { type: "assistant", id: randomUUID(), message: directResponse });
+		recordChatAudit({
+			sessionId: state.identity,
+			visitorName: state.visitorName,
+			question: message,
+			response: directResponse,
+			status: "answered",
+			model: "deterministic",
+			attachmentCount: fileIds.length,
+		});
 		return;
 	}
 	if (state.inFlight) {
@@ -339,16 +390,32 @@ const handleMessage = async (socket, state, event) => {
 			{ role: "model", parts: [{ text: answer }] },
 		].slice(-8);
 		send(socket, { type: "assistant", id: randomUUID(), message: answer });
+		recordChatAudit({
+			sessionId: state.identity,
+			visitorName: state.visitorName,
+			question: message,
+			response: answer,
+			status: "answered",
+			model: geminiModel,
+			attachmentCount: fileIds.length,
+		});
 	} catch (error) {
 		console.error("Portfolio assistant request failed.", {
 			name: error?.name || "Error",
 			status: Number.isInteger(error?.status) ? error.status : null,
 		});
-		send(socket, {
-			type: "error",
-			message: error instanceof ChatFileValidationError
-				? error.message
-				: "The assistant is temporarily unavailable. Please try again.",
+		const errorMessage = error instanceof ChatFileValidationError
+			? error.message
+			: "The assistant is temporarily unavailable. Please try again.";
+		send(socket, { type: "error", message: errorMessage });
+		recordChatAudit({
+			sessionId: state.identity,
+			visitorName: state.visitorName,
+			question: message,
+			response: errorMessage,
+			status: "error",
+			model: geminiModel,
+			attachmentCount: fileIds.length,
 		});
 	} finally {
 		clearTimeout(timeout);
