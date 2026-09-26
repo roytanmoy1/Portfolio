@@ -65,6 +65,6 @@
 	.main {
 		width: calc(100% - 1.25rem);
 		max-width: 1240px;
-		padding-top: 5.75rem;
+		padding-top: 5rem;
 	}
 }
