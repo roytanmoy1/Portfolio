@@ -81,7 +81,7 @@ html {
 }
 
 body {
-	min-width: 320px;
+	min-width: 0;
 	max-width: 100%;
 	overflow-x: hidden;
 	background:

@@ -1,15 +1,11 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { neon } from "@neondatabase/serverless";
+import { portfolioData } from "../app/data/portfolioData.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
 	throw new Error("DATABASE_URL is required to seed Neon.");
 }
 
-const dataPath = resolve(process.cwd(), "app/data/portfolioData.js");
-const source = await readFile(dataPath, "utf8");
-const portfolioData = new Function(source.replace(/^export const portfolioData = /, "return "))();
 const sql = neon(databaseUrl);
 const content = JSON.stringify(portfolioData);
 

@@ -2,6 +2,7 @@
   "name": "the_den",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -20,7 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.1.2",
+    "eslint-config-next": "^15.5.9",
     "nodemon": "^3.1.10"
   }
 }

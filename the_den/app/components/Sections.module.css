@@ -997,13 +997,6 @@
 	background: var(--bg-deep);
 }
 
-.projectPreview iframe {
-	width: 100%;
-	height: 100%;
-	border: 0;
-	background: var(--bg-elevated);
-}
-
 .previewPlaceholder {
 	display: grid;
 	place-items: center;
@@ -1017,6 +1010,12 @@
 	color: var(--text-subtle);
 	font-size: 0.7rem;
 	text-align: center;
+}
+
+.previewLink {
+	color: var(--accent-color);
+	font-size: 0.68rem;
+	font-weight: 800;
 }
 
 .previewPlaceholder svg {
@@ -1227,6 +1226,13 @@
 	overflow: hidden;
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
+}
+
+.honeypot input {
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	border: 0;
 }
 
 .fieldFull {

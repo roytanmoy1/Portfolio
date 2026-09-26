@@ -139,13 +139,13 @@ const LabSection = ({ id }) => {
 								<article className={styles.personalProjectCard} key={project.repo}>
 									<div className={styles.projectPreview}>
 										{project.liveUrl ? (
-											<iframe
-												src={project.liveUrl}
-												title={`${project.title} live preview`}
-												loading="lazy"
-												referrerPolicy="no-referrer"
-												sandbox="allow-forms allow-popups allow-scripts"
-											/>
+											<div className={styles.previewPlaceholder}>
+												<FaExternalLinkAlt aria-hidden="true" />
+												<span>Live app available</span>
+												<a className={styles.previewLink} href={project.liveUrl} target="_blank" rel="noreferrer">
+													Open preview
+												</a>
+											</div>
 										) : (
 											<div className={styles.previewPlaceholder}>
 												<FaCode aria-hidden="true" />

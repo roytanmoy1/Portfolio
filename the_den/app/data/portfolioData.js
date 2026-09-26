@@ -222,7 +222,7 @@ export const portfolioData = {
 			description: "A Next.js dashboard for invoices, payments, and customer details.",
 			stack: ["Next.js", "TypeScript", "PostgreSQL", "Vercel"],
 			repoUrl: "https://github.com/roytanmoy1/NextJSApp",
-			liveUrl: "https://next-js-app-eight-henna.vercel.app",
+			liveUrl: "https://next-js-app-nine-ebon.vercel.app/login",
 		},
 		{
 			repo: "Vuejs-demo-app",

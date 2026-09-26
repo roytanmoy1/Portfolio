@@ -21,6 +21,20 @@ const response = (body, status) =>
 
 const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
 
+const getFormspreeEndpoint = () => {
+	const endpoint = cleanText(process.env.FORMSPREE_ENDPOINT);
+	if (!endpoint || endpoint.includes("your-verified-form-id")) return null;
+
+	try {
+		const url = new URL(endpoint);
+		return url.protocol === "https:" && url.hostname === "formspree.io" && /^\/f\/[A-Za-z0-9]+$/.test(url.pathname)
+			? url.href
+			: null;
+	} catch {
+		return null;
+	}
+};
+
 export async function POST(request) {
 	const address = (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown")
 		.split(",")[0]
@@ -103,18 +117,9 @@ export async function POST(request) {
 		}
 	}
 
-	const endpoint = process.env.FORMSPREE_ENDPOINT;
+	const endpoint = getFormspreeEndpoint();
 	if (!endpoint) {
 		return response({ error: "Email delivery is not configured." }, 503);
-	}
-
-	try {
-		const endpointUrl = new URL(endpoint);
-		if (endpointUrl.protocol !== "https:" || endpointUrl.hostname !== "formspree.io") {
-			return response({ error: "Email delivery configuration is invalid." }, 500);
-		}
-	} catch {
-		return response({ error: "Email delivery configuration is invalid." }, 500);
 	}
 
 	try {
