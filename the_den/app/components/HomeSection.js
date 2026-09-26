@@ -105,13 +105,19 @@ const HomeSection = ({ id }) => {
 									LinkedIn
 								</span>
 							</a>
-							<span className={styles.contactItem}>
-								<FaMapMarkerAlt className={styles.contactIcon} aria-hidden="true" />
-								<span className={styles.contactText}>
-									<span className={styles.contactLabel}>Based in</span>
-									{portfolioData.location}
-								</span>
-							</span>
+							<div className={styles.locationMap}>
+								<iframe
+									title="Map showing Bengaluru, India"
+									src="https://www.google.com/maps?q=Bengaluru%2C%20India&z=11&output=embed"
+									loading="lazy"
+									referrerPolicy="no-referrer-when-downgrade"
+									allowFullScreen
+								/>
+								<div className={styles.locationCaption}>
+									<FaMapMarkerAlt aria-hidden="true" />
+									<span><small>Based in</small>{portfolioData.location}</span>
+								</div>
+							</div>
 						</div>
 					</aside>
 				</div>

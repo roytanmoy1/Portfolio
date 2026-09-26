@@ -38,6 +38,42 @@ Use the mailbox address for `SMTP_FROM_EMAIL`. `CONTACT_TO_EMAIL` may be any inb
 
 Never commit `.env.local`, mailbox passwords, or app passwords.
 
+## Portfolio assistant
+
+The header robot control opens a responsive right-side assistant over an authenticated WebSocket. The browser obtains a two-minute, origin-bound JWT from `/api/chat/token`, then connects directly to the `portfoliochat` Neon Function. Gemini credentials remain only in the Function environment.
+
+Security controls include:
+
+- same-origin token minting and an origin allowlist on the WebSocket handshake
+- signed, short-lived, scope-limited JWTs
+- text-only frames, strict input/output sizes, per-connection rate limits, one in-flight model request, and timeouts
+- deterministic refusal of unrelated questions, prompt extraction, jailbreaks, and credential requests before inference
+- a curated public-data allowlist instead of database access or arbitrary retrieval
+- Gemini safety settings, low-temperature answers, output scanning, sanitized errors, and no prompt/body logging
+
+Guardrails reduce abuse but cannot make probabilistic model output infallible. Keep the context public-only, monitor refusals and model errors, rotate credentials, and review the policy whenever portfolio data changes.
+
+The Gemini key shared in chat must be revoked before use. Create a replacement in Google AI Studio and enter it only into a gitignored deployment environment file or secure terminal prompt.
+
+Configure the Function in the existing `us-east-2` Neon project:
+
+```bash
+neon login
+neon link
+neon deploy --env .env.chat.local --no-env-pull
+neon functions get portfoliochat
+```
+
+Use the same `CHAT_TOKEN_SECRET` in Neon and Vercel. Store `GEMINI_API_KEY`, `GEMINI_MODEL`, and `CHAT_ALLOWED_ORIGINS` in Neon. Store only `CHAT_TOKEN_SECRET` and the returned invocation origin as `CHAT_WEBSOCKET_URL` in Vercel. Redeploy Vercel after setting those variables.
+
+Run the deterministic boundary checks with:
+
+```bash
+npm run test:chat
+```
+
+The Bengaluru map is a keyless Google Maps embed. It intentionally shows the city, not a precise home address.
+
 ## Deployment
 
 The current public Vercel deployment is [tanmoyroy.vercel.app](https://tanmoyroy.vercel.app/). The Vercel project is connected to [github.com/roytanmoy1/Portfolio](https://github.com/roytanmoy1/Portfolio).
@@ -50,8 +86,9 @@ To deploy the updated version on Vercel:
 4. Add `NEXT_PUBLIC_SITE_URL` with the final public URL.
 5. Add the server-only `DATABASE_URL` from Neon.
 6. Add the server-only SMTP variables from the contact-form section.
-7. Deploy and submit a real test message before relying on the form.
-8. Verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, and the resume download.
+7. Deploy the Neon Function and add the chat variables from the portfolio-assistant section.
+8. Deploy and submit a real test message before relying on the form.
+9. Verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, `/api/chat/token`, the assistant WebSocket, and the resume download.
 
 ## Data and database
 

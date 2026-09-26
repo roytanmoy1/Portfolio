@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:chat": "node scripts/test-chat-security.mjs",
     "test:contact": "node scripts/test-contact-smtp.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
@@ -16,7 +17,10 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@neon/config": "^1.8.2",
+    "@neon/functions": "^0.11.0",
     "@neondatabase/serverless": "^1.1.0",
+    "jose": "^6.2.12",
     "next": "^15.5.9",
     "nodemailer": "^10.0.10",
     "react": "^19.0.0",
@@ -25,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/node": "^26.6.3",
     "eslint": "^9",
     "eslint-config-next": "^15.5.9",
     "nodemon": "^3.1.10"

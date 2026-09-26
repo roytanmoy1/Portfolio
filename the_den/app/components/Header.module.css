@@ -103,6 +103,7 @@
 }
 
 .themeToggle,
+.assistantToggle,
 .hamburger {
 	display: grid;
 	place-items: center;
@@ -121,6 +122,14 @@
 .themeToggle:hover,
 .themeToggle:focus-visible {
 	transform: translateY(-2px) rotate(8deg);
+	background: var(--accent-color);
+	color: var(--on-accent);
+}
+
+.assistantToggle:hover,
+.assistantToggle:focus-visible,
+.assistantToggle.active {
+	transform: translateY(-2px);
 	background: var(--accent-color);
 	color: var(--on-accent);
 }
@@ -208,6 +217,7 @@
 	}
 
 	.themeToggle,
+	.assistantToggle,
 	.hamburger {
 		width: 2.25rem;
 		height: 2.25rem;

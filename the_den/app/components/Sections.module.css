@@ -373,6 +373,54 @@
 	text-transform: uppercase;
 }
 
+.locationMap {
+	position: relative;
+	grid-column: 1 / -1;
+	min-height: 8.5rem;
+	overflow: hidden;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.9rem;
+	background: var(--bg-deep);
+}
+
+.locationMap iframe {
+	display: block;
+	width: 100%;
+	height: 8.5rem;
+	border: 0;
+	filter: saturate(0.72) contrast(1.06);
+}
+
+.locationCaption {
+	position: absolute;
+	bottom: 0.55rem;
+	left: 0.55rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.65rem;
+	background: var(--glass-heavy);
+	box-shadow: var(--shadow-glass);
+	color: var(--text-primary);
+	font-size: 0.68rem;
+	pointer-events: none;
+}
+
+.locationCaption svg {
+	color: var(--accent-color);
+}
+
+.locationCaption small {
+	display: block;
+	color: var(--text-subtle);
+	font-size: 0.52rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
 /* About */
 .aboutGrid {
 	display: grid;

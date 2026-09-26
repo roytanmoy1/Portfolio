@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./Header.module.css";
 import Link from "next/link";
 import Image from "next/image";
-import { FaSun, FaMoon } from "react-icons/fa";
+import { FaSun, FaMoon, FaRobot } from "react-icons/fa";
 import { useTheme } from "../ThemeContext";
+import { useAssistant } from "../AssistantContext";
 import { portfolioData } from "../data/portfolioData";
 
 const navigationItems = [
@@ -19,6 +20,7 @@ const navigationItems = [
 const Header = () => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const { darkMode, toggleDarkMode } = useTheme();
+	const { isAssistantOpen, toggleAssistant } = useAssistant();
 	const menuButtonRef = useRef(null);
 
 	useEffect(() => {
@@ -83,6 +85,21 @@ const Header = () => {
 			</nav>
 
 			<div className={styles.rightSection}>
+				<button
+					className={`${styles.assistantToggle} ${isAssistantOpen ? styles.active : ""}`}
+					onClick={() => {
+						setIsMenuOpen(false);
+						toggleAssistant();
+					}}
+					aria-label={isAssistantOpen ? "Close portfolio assistant" : "Open portfolio assistant"}
+					aria-expanded={isAssistantOpen}
+					aria-controls="portfolio-assistant"
+					title="Portfolio assistant"
+					type="button"
+				>
+					<FaRobot aria-hidden="true" />
+				</button>
+
 				<button
 					className={styles.themeToggle}
 					onClick={toggleDarkMode}
