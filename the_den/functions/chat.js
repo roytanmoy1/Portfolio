@@ -39,7 +39,9 @@ if (!geminiApiKey) throw new Error("GEMINI_API_KEY is required.");
 if (!/^[a-z0-9._-]+$/i.test(geminiModel)) throw new Error("GEMINI_MODEL is invalid.");
 if (allowedOrigins.size === 0) throw new Error("CHAT_ALLOWED_ORIGINS is required.");
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+const databaseUrl = new URL(process.env.DATABASE_URL);
+databaseUrl.searchParams.set("sslmode", "verify-full");
+const pool = new Pool({ connectionString: databaseUrl.href, max: 5 });
 attachDatabasePool(pool);
 
 const publicPortfolioContext = JSON.stringify(buildPublicPortfolioContext(portfolioData));
@@ -142,13 +144,7 @@ const loadAttachmentParts = async (sessionId, fileIds) => {
 
 const requestGemini = async ({ message, visitorName, history, attachmentParts, signal }) => {
 	const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
-	const response = await fetch(endpoint, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			"x-goog-api-key": geminiApiKey,
-		},
-		body: JSON.stringify({
+	const requestBody = JSON.stringify({
 			systemInstruction: { parts: [{ text: systemInstruction }] },
 			contents: [...history, { role: "user", parts: [{ text: `Visitor name: ${visitorName}\nQuestion: ${message}` }, ...attachmentParts] }],
 			generationConfig: {
@@ -163,9 +159,21 @@ const requestGemini = async ({ message, visitorName, history, attachmentParts, s
 				{ category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
 				{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
 			],
-		}),
-		signal,
 	});
+	let response;
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		response = await fetch(endpoint, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-goog-api-key": geminiApiKey,
+			},
+			body: requestBody,
+			signal,
+		});
+		if (response.ok || ![429, 500, 502, 503, 504].includes(response.status) || attempt === 2) break;
+		await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** attempt + Math.floor(Math.random() * 150)));
+	}
 
 	if (!response.ok) {
 		const error = new Error("Gemini request failed.");
