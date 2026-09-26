@@ -109,7 +109,12 @@ export async function POST(request) {
 		if (!delivery.configured) return response({ error: "Email delivery is not configured." }, 503);
 		if (!delivery.accepted) return response({ error: "Email delivery failed." }, 502);
 		return response({ ok: true }, 200);
-	} catch {
+	} catch (error) {
+		console.error("Contact email delivery failed.", {
+			code: typeof error?.code === "string" ? error.code : "UNKNOWN",
+			command: typeof error?.command === "string" ? error.command : "UNKNOWN",
+			responseCode: Number.isInteger(error?.responseCode) ? error.responseCode : null,
+		});
 		return response({ error: "Email delivery is temporarily unavailable." }, 502);
 	}
 }

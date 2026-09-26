@@ -7,7 +7,8 @@ const getMailConfiguration = () => {
 	const host = cleanText(process.env.SMTP_HOST);
 	const port = Number(process.env.SMTP_PORT || 465);
 	const user = cleanText(process.env.SMTP_USER);
-	const password = cleanText(process.env.SMTP_PASS);
+	const passwordValue = cleanText(process.env.SMTP_PASS);
+	const password = host === "smtp.gmail.com" ? passwordValue.replace(/\s/g, "") : passwordValue;
 	const to = cleanText(process.env.CONTACT_TO_EMAIL) || user;
 	const from = cleanText(process.env.SMTP_FROM_EMAIL) || user;
 	const secureSetting = cleanText(process.env.SMTP_SECURE);
