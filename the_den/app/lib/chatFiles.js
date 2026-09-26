@@ -1,30 +1,46 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import readXlsxFile from "read-excel-file/node";
 
 export const MAX_CHAT_FILES = 5;
 export const MAX_CHAT_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_CHAT_UPLOAD_BYTES = MAX_CHAT_FILES * MAX_CHAT_FILE_BYTES;
 
 const allowedTypes = new Set([
-	"application/json",
 	"application/pdf",
-	"image/jpeg",
-	"image/png",
-	"image/webp",
-	"text/csv",
-	"text/markdown",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 	"text/plain",
 ]);
 const extensionTypes = new Map([
-	["csv", "text/csv"],
-	["jpeg", "image/jpeg"],
-	["jpg", "image/jpeg"],
-	["json", "application/json"],
-	["md", "text/markdown"],
 	["pdf", "application/pdf"],
-	["png", "image/png"],
 	["txt", "text/plain"],
-	["webp", "image/webp"],
+	["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
 ]);
+
+const validateZipExpansion = (buffer) => {
+	let entries = 0;
+	let totalUncompressedBytes = 0;
+
+	for (let offset = 0; offset <= buffer.length - 46;) {
+		if (buffer.readUInt32LE(offset) !== 0x02014b50) {
+			offset += 1;
+			continue;
+		}
+
+		const uncompressedBytes = buffer.readUInt32LE(offset + 24);
+		const nameLength = buffer.readUInt16LE(offset + 28);
+		const extraLength = buffer.readUInt16LE(offset + 30);
+		const commentLength = buffer.readUInt16LE(offset + 32);
+		if (uncompressedBytes === 0xffffffff) throw new ChatFileValidationError("ZIP64 workbooks are not supported.");
+		totalUncompressedBytes += uncompressedBytes;
+		entries += 1;
+		if (entries > 1000 || totalUncompressedBytes > 20 * 1024 * 1024) {
+			throw new ChatFileValidationError("Excel workbook expands beyond the safe processing limit.");
+		}
+		offset += 46 + nameLength + extraLength + commentLength;
+	}
+
+	if (entries === 0) throw new ChatFileValidationError("Invalid Excel workbook.");
+};
 
 export class ChatFileValidationError extends Error {}
 
@@ -60,16 +76,14 @@ export function validateChatFileContent(type, bytes) {
 	let valid = true;
 
 	if (type === "application/pdf") valid = buffer.subarray(0, 5).toString("ascii") === "%PDF-";
-	if (type === "image/png") valid = startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-	if (type === "image/jpeg") valid = startsWith([0xff, 0xd8, 0xff]);
-	if (type === "image/webp") {
-		valid = buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+	if (type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+		valid = startsWith([0x50, 0x4b, 0x03, 0x04]);
+		if (valid) validateZipExpansion(buffer);
 	}
-	if (type.startsWith("text/") || type === "application/json") {
+	if (type === "text/plain") {
 		try {
 			const text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
 			valid = !text.includes("\u0000");
-			if (valid && type === "application/json") JSON.parse(text);
 		} catch {
 			valid = false;
 		}
@@ -77,6 +91,26 @@ export function validateChatFileContent(type, bytes) {
 
 	if (!valid) throw new ChatFileValidationError("File contents do not match the declared type.");
 	return buffer;
+}
+
+export async function extractExcelText(bytes) {
+	try {
+		const sheets = await readXlsxFile(Buffer.from(bytes));
+		if (sheets.length > 20) throw new ChatFileValidationError("Excel workbook exceeds 20 sheets.");
+		const rows = sheets.flatMap(({ sheet, data }) => [[`Sheet: ${sheet}`], ...data]);
+		if (rows.length > 500) throw new ChatFileValidationError("Excel workbook exceeds 500 rows.");
+		let cells = 0;
+		const textRows = rows.map((row) => {
+			if (row.length > 50) throw new ChatFileValidationError("Excel workbook exceeds 50 columns.");
+			cells += row.length;
+			if (cells > 5000) throw new ChatFileValidationError("Excel workbook exceeds 5,000 cells.");
+			return row.map((cell) => String(cell ?? "").replace(/\s+/g, " ").trim()).join("\t");
+		});
+		return textRows.join("\n").slice(0, 40_000);
+	} catch (error) {
+		if (error instanceof ChatFileValidationError) throw error;
+		throw new ChatFileValidationError("Invalid or unsupported Excel workbook.", { cause: error });
+	}
 }
 
 export function getFileEncryptionKey(value) {

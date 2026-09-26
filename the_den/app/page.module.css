@@ -38,13 +38,22 @@
 	width: min(1280px, calc(100% - 2rem));
 	margin: 0 auto;
 	padding-top: 7.5rem;
-	transition: width 240ms ease, margin 240ms ease;
 }
 
 @media (min-width: 1101px) {
 	.assistantOpen .main {
-		width: min(1280px, calc(80vw - 3rem));
-		margin-right: calc(20vw + 2rem);
+		width: calc(80% - 3rem);
+		max-width: 1280px;
+		margin-right: calc(20% + 2rem);
+		margin-left: auto;
+	}
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+	.assistantOpen .main {
+		width: calc(58% - 2rem);
+		max-width: 1280px;
+		margin-right: calc(42% + 1.25rem);
 		margin-left: auto;
 	}
 }

@@ -42,9 +42,9 @@ Never commit `.env.local`, mailbox passwords, or app passwords.
 
 The header robot control opens a responsive right-side assistant over an authenticated WebSocket. The browser obtains a two-minute, origin-bound JWT from `/api/chat/token`, then connects directly to the `portfoliochat` Neon Function. Gemini credentials remain only in the Function environment.
 
-The panel opens by default. Native browser speech recognition can fill the prompt from the microphone, and spoken replies are opt-in. Browser support and microphone permission determine voice availability; typed chat remains the fallback.
+The panel opens by default on desktop and zoomed fine-pointer layouts. Actual mobile devices start with it closed and open a compact bottom sheet from the header robot control. Before chat controls appear, the visitor must provide a 2–60 character display name; the name is held only in the live socket session. Native browser speech recognition can fill the prompt from the microphone, and spoken replies are opt-in. Browser support and microphone permission determine voice availability; typed chat remains the fallback.
 
-Visitors may attach up to five `.pdf`, `.txt`, `.md`, `.csv`, `.json`, `.png`, `.jpg`, `.jpeg`, or `.webp` files, with a hard limit of 2 MiB each. Both client and Function validate the limits; the Function also verifies file signatures or UTF-8/JSON content. Files are SHA-256 hashed, encrypted with AES-256-GCM before insertion, scoped to the anonymous HttpOnly-cookie session, unavailable through any public download route, and excluded from queries after 24 hours. Uploaded content is untrusted context, never model instructions.
+Visitors may attach up to five `.pdf`, `.txt`, or modern Excel `.xlsx` files, with a hard limit of 2 MiB each. Legacy `.xls` is intentionally unsupported. Both client and Function validate the limits; the Function also verifies PDF/TXT signatures or parses the XLSX package with expansion, sheet, row, column, cell, and extracted-text caps. Files are SHA-256 hashed, encrypted with AES-256-GCM before insertion, scoped to the anonymous HttpOnly-cookie session, unavailable through any public download route, and excluded from queries after 24 hours. Uploaded content is untrusted context, never model instructions.
 
 Security controls include:
 

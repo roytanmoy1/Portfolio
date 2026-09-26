@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { strToU8, zipSync } from "fflate";
 import { jwtVerify } from "jose";
 import { portfolioData } from "../app/data/portfolioData.js";
 import {
 	MAX_CHAT_FILE_BYTES,
 	decryptChatFile,
 	encryptChatFile,
+	extractExcelText,
 	getFileEncryptionKey,
 	validateChatFileContent,
 	validateChatFileMetadata,
@@ -59,8 +61,23 @@ const metadata = validateChatFileMetadata({ name: "../resume notes.txt", size: f
 assert.equal(metadata.name, "resume notes.txt");
 assert.throws(() => validateChatFileMetadata({ name: "large.pdf", size: MAX_CHAT_FILE_BYTES + 1, type: "application/pdf" }));
 assert.throws(() => validateChatFileMetadata({ name: "fake.pdf", size: 5, type: "text/plain" }));
+assert.throws(() => validateChatFileMetadata({ name: "notes.md", size: 5, type: "text/markdown" }));
 assert.throws(() => validateChatFileContent("application/pdf", fileContent));
 assert.deepEqual(validateChatFileContent("text/plain", fileContent), fileContent);
+
+const workbook = Buffer.from(zipSync({
+	"[Content_Types].xml": strToU8('<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'),
+	"_rels/.rels": strToU8('<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'),
+	"xl/workbook.xml": strToU8('<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+	"xl/_rels/workbook.xml.rels": strToU8('<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'),
+	"xl/styles.xml": strToU8('<?xml version="1.0"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="0"/><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>'),
+	"xl/worksheets/sheet1.xml": strToU8('<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Name</t></is></c><c r="B1" t="inlineStr"><is><t>Role</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>Tanmoy</t></is></c><c r="B2" t="inlineStr"><is><t>Engineer</t></is></c></row></sheetData></worksheet>'),
+}, { level: 0 }));
+const excelType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+assert.equal(validateChatFileMetadata({ name: "portfolio.xlsx", size: workbook.length, type: excelType }).type, excelType);
+assert.deepEqual(validateChatFileContent(excelType, workbook), workbook);
+assert.match(await extractExcelText(workbook), /Tanmoy\tEngineer/);
+
 const encryptedFile = encryptChatFile(fileContent, fileKey);
 assert.notDeepEqual(encryptedFile.ciphertext, fileContent);
 assert.deepEqual(decryptChatFile(encryptedFile, fileKey), fileContent);

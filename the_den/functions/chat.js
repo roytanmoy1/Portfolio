@@ -9,6 +9,7 @@ import {
 	MAX_CHAT_UPLOAD_BYTES,
 	decryptChatFile,
 	encryptChatFile,
+	extractExcelText,
 	getFileEncryptionKey,
 	validateChatFileContent,
 	validateChatFileMetadata,
@@ -119,22 +120,26 @@ const loadAttachmentParts = async (sessionId, fileIds) => {
 	if (rows.length !== new Set(fileIds).size) throw new ChatFileValidationError("An attachment is unavailable.");
 
 	let remainingTextCharacters = 40_000;
-	return rows.map((row) => {
+	return Promise.all(rows.map(async (row) => {
 		const content = decryptChatFile({
 			authTag: row.encryption_tag,
 			ciphertext: row.encrypted_content,
 			iv: row.encryption_iv,
 		}, fileEncryptionKey);
-		if (row.mime_type.startsWith("text/") || row.mime_type === "application/json") {
+		if (row.mime_type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+			const text = await extractExcelText(content);
+			return { text: `<attachment name="${row.original_name}" type="excel">\n${text}\n</attachment>` };
+		}
+		if (row.mime_type === "text/plain") {
 			const text = content.toString("utf8").slice(0, remainingTextCharacters);
 			remainingTextCharacters = Math.max(0, remainingTextCharacters - text.length);
 			return { text: `<attachment name="${row.original_name}">\n${text}\n</attachment>` };
 		}
 		return { inlineData: { data: content.toString("base64"), mimeType: row.mime_type } };
-	});
+	}));
 };
 
-const requestGemini = async ({ message, history, attachmentParts, signal }) => {
+const requestGemini = async ({ message, visitorName, history, attachmentParts, signal }) => {
 	const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
 	const response = await fetch(endpoint, {
 		method: "POST",
@@ -144,7 +149,7 @@ const requestGemini = async ({ message, history, attachmentParts, signal }) => {
 		},
 		body: JSON.stringify({
 			systemInstruction: { parts: [{ text: systemInstruction }] },
-			contents: [...history, { role: "user", parts: [{ text: message }, ...attachmentParts] }],
+			contents: [...history, { role: "user", parts: [{ text: `Visitor name: ${visitorName}\nQuestion: ${message}` }, ...attachmentParts] }],
 			generationConfig: {
 				temperature: 0.2,
 				topP: 0.7,
@@ -199,6 +204,9 @@ const handleUpload = async (request, origin, sessionId) => {
 			totalBytes += metadata.size;
 			if (totalBytes > MAX_CHAT_UPLOAD_BYTES) throw new ChatFileValidationError("Combined upload is too large.");
 			const content = validateChatFileContent(metadata.type, await file.arrayBuffer());
+			if (metadata.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+				await extractExcelText(content);
+			}
 			prepared.push({ ...metadata, ...encryptChatFile(content, fileEncryptionKey) });
 		}
 
@@ -269,6 +277,12 @@ const handleMessage = async (socket, state, event) => {
 		send(socket, { type: "error", message: `Messages must contain 2-${MAX_CHAT_INPUT_LENGTH} characters.` });
 		return;
 	}
+	const submittedName = normalizeChatMessage(payload.name);
+	if (submittedName.length < 2 || submittedName.length > 60) {
+		send(socket, { type: "error", message: "Enter your name before starting chat." });
+		return;
+	}
+	state.visitorName ||= submittedName;
 
 	const now = Date.now();
 	state.timestamps = state.timestamps.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
@@ -298,6 +312,7 @@ const handleMessage = async (socket, state, event) => {
 		const attachmentParts = await loadAttachmentParts(state.identity, fileIds);
 		const answer = await requestGemini({
 			message,
+			visitorName: state.visitorName,
 			history: state.history,
 			attachmentParts,
 			signal: state.controller.signal,
@@ -355,7 +370,7 @@ export default {
 		if (!identity) return new Response("Unauthorized", { status: 401 });
 
 		const { socket, response } = upgradeWebSocket(request);
-		const state = { history: [], timestamps: [], inFlight: false, controller: null, identity };
+		const state = { history: [], timestamps: [], inFlight: false, controller: null, identity, visitorName: "" };
 		states.set(socket, state);
 
 		socket.addEventListener("open", () => {

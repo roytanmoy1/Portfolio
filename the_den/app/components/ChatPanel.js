@@ -56,16 +56,20 @@ const ChatPanel = () => {
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("connecting");
 	const [attachments, setAttachments] = useState([]);
+	const [draftName, setDraftName] = useState("");
 	const [isUploading, setIsUploading] = useState(false);
 	const [isListening, setIsListening] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 	const [isUserActive, setIsUserActive] = useState(true);
 	const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(false);
+	const [visitorName, setVisitorName] = useState("");
+	const [nameError, setNameError] = useState("");
 	const socketRef = useRef(null);
 	const fileInputRef = useRef(null);
 	const recognitionRef = useRef(null);
 	const voiceRepliesRef = useRef(false);
 	const messagesEndRef = useRef(null);
+	const nameInputRef = useRef(null);
 	const inputRef = useRef(null);
 
 	useEffect(() => {
@@ -210,9 +214,10 @@ const ChatPanel = () => {
 			if (event.key === "Escape") closeAssistant();
 		};
 		document.addEventListener("keydown", handleKeyDown);
-		inputRef.current?.focus();
+		if (visitorName) inputRef.current?.focus();
+		else nameInputRef.current?.focus();
 		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [closeAssistant, isAssistantOpen]);
+	}, [closeAssistant, isAssistantOpen, visitorName]);
 
 	useEffect(() => {
 		if (isAssistantOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -226,6 +231,17 @@ const ChatPanel = () => {
 
 	const addClientError = (message) => {
 		setMessages((current) => [...current, { id: createId(), role: "error", text: message }]);
+	};
+
+	const submitVisitorName = (event) => {
+		event.preventDefault();
+		const name = draftName.replace(/\s+/g, " ").trim();
+		if (name.length < 2 || name.length > 60) {
+			setNameError("Enter a name between 2 and 60 characters.");
+			return;
+		}
+		setNameError("");
+		setVisitorName(name);
 	};
 
 	const handleFileSelection = async (event) => {
@@ -320,6 +336,7 @@ const ChatPanel = () => {
 		socketRef.current.send(JSON.stringify({
 			type: "chat",
 			message,
+			name: visitorName,
 			fileIds: attachments.map((file) => file.id),
 		}));
 		setAttachments([]);
@@ -347,38 +364,64 @@ const ChatPanel = () => {
 						<span className={`${styles.statusDot} ${connectionState === "ready" ? styles.online : ""}`} aria-hidden="true" />
 						{connectionLabels[connectionState]}
 					</span>
-					<button
-						type="button"
-						className={`${styles.voiceToggle} ${voiceRepliesEnabled ? styles.activeControl : ""}`}
-						onClick={() => setVoiceRepliesEnabled((current) => !current)}
-						aria-label={voiceRepliesEnabled ? "Disable spoken replies" : "Enable spoken replies"}
-						title={voiceRepliesEnabled ? "Spoken replies on" : "Spoken replies off"}
-					>
-						{voiceRepliesEnabled ? <FaVolumeUp aria-hidden="true" /> : <FaVolumeMute aria-hidden="true" />}
-					</button>
+					{visitorName && (
+						<button
+							type="button"
+							className={`${styles.voiceToggle} ${voiceRepliesEnabled ? styles.activeControl : ""}`}
+							onClick={() => setVoiceRepliesEnabled((current) => !current)}
+							aria-label={voiceRepliesEnabled ? "Disable spoken replies" : "Enable spoken replies"}
+							title={voiceRepliesEnabled ? "Spoken replies on" : "Spoken replies off"}
+						>
+							{voiceRepliesEnabled ? <FaVolumeUp aria-hidden="true" /> : <FaVolumeMute aria-hidden="true" />}
+						</button>
+					)}
 				</div>
 
 				<div className={styles.messages} aria-live="polite">
-					{messages.length === 0 && (
-						<div className={styles.welcome}>
-							<strong>Start with a portfolio question.</strong>
-							<p>I can discuss public experience, skills, projects, education, and contact details.</p>
-						</div>
+					{!visitorName ? (
+						<form className={styles.onboarding} onSubmit={submitVisitorName}>
+							<span className={styles.onboardingIcon} aria-hidden="true"><FaRobot /></span>
+							<h3>Welcome</h3>
+							<p>What should I call you?</p>
+							<label className={styles.srOnly} htmlFor="assistant-name">Your name</label>
+							<input
+								id="assistant-name"
+								ref={nameInputRef}
+								value={draftName}
+								onChange={(event) => setDraftName(event.target.value)}
+								placeholder="Your name"
+								minLength={2}
+								maxLength={60}
+								autoComplete="name"
+								required
+							/>
+							{nameError && <span className={styles.nameError} role="alert">{nameError}</span>}
+							<button type="submit" disabled={draftName.trim().length < 2}>Continue</button>
+						</form>
+					) : (
+						<>
+							{messages.length === 0 && (
+								<div className={styles.welcome}>
+									<strong>Hi {visitorName}. Start with a portfolio question.</strong>
+									<p>I can discuss public experience, skills, projects, education, and contact details.</p>
+								</div>
+							)}
+							{messages.map((message) => (
+								<div className={`${styles.message} ${styles[message.role]}`} key={message.id}>
+									{message.text}
+								</div>
+							))}
+							{isTyping && (
+								<div className={`${styles.message} ${styles.assistant} ${styles.typing}`} aria-label="Assistant is responding">
+									<span /><span /><span />
+								</div>
+							)}
+							<div ref={messagesEndRef} />
+						</>
 					)}
-					{messages.map((message) => (
-						<div className={`${styles.message} ${styles[message.role]}`} key={message.id}>
-							{message.text}
-						</div>
-					))}
-					{isTyping && (
-						<div className={`${styles.message} ${styles.assistant} ${styles.typing}`} aria-label="Assistant is responding">
-							<span /><span /><span />
-						</div>
-					)}
-					<div ref={messagesEndRef} />
 				</div>
 
-				{messages.every((message) => message.role !== "user") && (
+				{visitorName && messages.every((message) => message.role !== "user") && (
 					<div className={styles.suggestions} aria-label="Suggested questions">
 						{suggestions.map((suggestion) => (
 							<button
@@ -393,7 +436,7 @@ const ChatPanel = () => {
 					</div>
 				)}
 
-				<form
+				{visitorName && <form
 					className={styles.composer}
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -404,7 +447,7 @@ const ChatPanel = () => {
 						ref={fileInputRef}
 						className={styles.fileInput}
 						type="file"
-						accept=".pdf,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.webp"
+						accept=".pdf,.txt,.xlsx"
 						multiple
 						onChange={handleFileSelection}
 						tabIndex={-1}
@@ -433,7 +476,7 @@ const ChatPanel = () => {
 							onClick={() => fileInputRef.current?.click()}
 							disabled={isUploading || attachments.length >= MAX_FILES}
 							aria-label="Attach files"
-							title="Attach up to 5 files, 2 MiB each"
+							title="Attach up to 5 PDF, TXT, or XLSX files, 2 MiB each"
 						>
 							<FaPaperclip aria-hidden="true" />
 						</button>
@@ -465,7 +508,7 @@ const ChatPanel = () => {
 							<FaArrowUp aria-hidden="true" />
 						</button>
 					</div>
-				</form>
+				</form>}
 		</aside>
 	);
 };

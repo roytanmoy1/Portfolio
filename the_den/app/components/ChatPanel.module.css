@@ -337,6 +337,72 @@
 	font-size: 0.6rem;
 }
 
+.onboarding {
+	display: grid;
+	width: min(100%, 18rem);
+	margin: auto;
+	gap: 0.65rem;
+	text-align: center;
+}
+
+.onboardingIcon {
+	display: grid;
+	place-items: center;
+	width: 2.8rem;
+	height: 2.8rem;
+	margin: 0 auto;
+	border: 1px solid var(--accent-border);
+	border-radius: 0.8rem;
+	background: var(--accent-transparent);
+	color: var(--accent-color);
+}
+
+.onboarding h3,
+.onboarding p {
+	margin: 0;
+}
+
+.onboarding h3 {
+	color: var(--text-primary);
+	font-size: 1rem;
+}
+
+.onboarding p {
+	color: var(--text-muted);
+	font-size: 0.72rem;
+}
+
+.onboarding input {
+	width: 100%;
+	height: 2.5rem;
+	padding: 0 0.75rem;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.7rem;
+	outline: 0;
+	background: var(--input-bg);
+	color: var(--text-primary);
+	font-size: 0.75rem;
+}
+
+.onboarding input:focus {
+	border-color: var(--accent-border);
+}
+
+.onboarding button {
+	min-height: 2.5rem;
+	border-radius: 0.7rem;
+	background: var(--accent-color);
+	color: var(--on-accent);
+	cursor: pointer;
+	font-size: 0.72rem;
+	font-weight: 800;
+}
+
+.nameError {
+	color: var(--error-color);
+	font-size: 0.65rem;
+}
+
 .srOnly {
 	position: absolute;
 	width: 1px;
@@ -362,13 +428,59 @@
 	}
 }
 
-@media (max-width: 1100px) {
+@media (min-width: 701px) and (max-width: 1100px) {
 	.panel {
 		top: 4.1rem;
+		right: 0.6rem;
+		bottom: 0.6rem;
+		width: min(22rem, 42vw);
+	}
+}
+
+@media (max-width: 700px) {
+	.panel {
+		top: auto;
 		left: 0.5rem;
 		right: 0.5rem;
 		bottom: 0.5rem;
 		width: auto;
+		height: min(30rem, 62dvh);
+		border-radius: 0.95rem;
+	}
+
+	.header {
+		padding: 0.65rem;
+	}
+
+	.botIcon,
+	.closeButton {
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.messages {
+		padding: 0.65rem;
+	}
+
+	.suggestions {
+		display: flex;
+		overflow-x: auto;
+		padding: 0 0.65rem 0.55rem;
+		scroll-snap-type: x proximity;
+	}
+
+	.suggestions button {
+		flex: 0 0 9.5rem;
+		min-height: 2.4rem;
+		scroll-snap-align: start;
+	}
+
+	.composer {
+		padding: 0.6rem;
+	}
+
+	.onboarding {
+		gap: 0.5rem;
 	}
 }
 

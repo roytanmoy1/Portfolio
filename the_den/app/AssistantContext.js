@@ -1,11 +1,16 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AssistantContext = createContext(null);
 
 export function AssistantProvider({ children }) {
-	const [isAssistantOpen, setIsAssistantOpen] = useState(true);
+	const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+
+	useEffect(() => {
+		const isMobile = window.matchMedia("(max-width: 700px) and (pointer: coarse)").matches;
+		setIsAssistantOpen(!isMobile);
+	}, []);
 
 	return (
 		<AssistantContext.Provider
