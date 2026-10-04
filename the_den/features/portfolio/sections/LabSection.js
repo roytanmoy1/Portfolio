@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FaGithub, FaExternalLinkAlt, FaCode, FaChartLine } from "react-icons/fa";
+import { FaGithub, FaExternalLinkAlt, FaCode } from "react-icons/fa";
 import styles from "./Sections.module.css";
 import SortableGrid from "@/shared/components/SortableGrid";
 import { portfolioData } from "../data/portfolioData";
@@ -113,93 +113,62 @@ const LabSection = ({ id }) => {
 					<h2 className={styles.sectionTitle}>Personal projects and practice.</h2>
 				</div>
 
-				<div className={styles.labGrid}>
-					<article className={styles.leetcodeCard}>
-						<div className={styles.labCardHeader}>
-							<span className={styles.labIcon} aria-hidden="true"><FaChartLine /></span>
-							<div>
-								<p className={styles.educationLabel}>Problem solving</p>
-								<h3 className={styles.educationTitle}>LeetCode · {portfolioData.leetcode.username}</h3>
-							</div>
+				<div className={styles.personalProjects}>
+					<div className={styles.labSubheading}>
+						<div>
+							<p className={styles.educationLabel}>Curated projects</p>
+							<h3 className={styles.educationTitle}>Personal builds and experiments</h3>
 						</div>
-
-						<div className={styles.leetcodeStats}>
-							<div><strong>{portfolioData.leetcode.solved}</strong><span>solved</span></div>
-							<div><strong>{portfolioData.leetcode.acceptance}</strong><span>acceptance</span></div>
-							<div><strong>{portfolioData.leetcode.rank}</strong><span>global rank</span></div>
-						</div>
-
-						<div className={styles.leetcodeMeta}>
-							<span>{portfolioData.leetcode.activeDays} active days</span>
-							<span>{portfolioData.leetcode.maxStreak} day max streak</span>
-						</div>
-						<div className={styles.stackList} aria-label="LeetCode languages and focus areas">
-							{[...portfolioData.leetcode.languages, ...portfolioData.leetcode.focus].map((item) => (
-								<span className={styles.stackTag} key={item}>{item}</span>
-							))}
-						</div>
-						<a className={styles.projectLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
-							Open LeetCode profile
+						<a className={styles.projectLink} href={portfolioData.github} target="_blank" rel="noreferrer">
+							All GitHub repos
 						</a>
-					</article>
-
-					<div className={styles.personalProjects}>
-						<div className={styles.labSubheading}>
-							<div>
-								<p className={styles.educationLabel}>Curated projects</p>
-								<h3 className={styles.educationTitle}>Personal builds and experiments</h3>
-							</div>
-							<a className={styles.projectLink} href={portfolioData.github} target="_blank" rel="noreferrer">
-								All GitHub repos
-							</a>
-						</div>
-
-						<SortableGrid
-							items={personalProjects}
-							className={styles.personalProjectGrid}
-							storageKey="portfolio-project-order"
-							renderItem={(project) => (
-								<article className={styles.personalProjectCard}>
-									<div className={styles.projectPreview}>
-										{project.liveUrl ? (
-											<div className={styles.previewPlaceholder}>
-												<FaExternalLinkAlt aria-hidden="true" />
-												<span>Live app available</span>
-												<a className={styles.previewLink} href={project.liveUrl} target="_blank" rel="noreferrer">
-													Open preview
-												</a>
-											</div>
-										) : (
-											<div className={styles.previewPlaceholder}>
-												<FaCode aria-hidden="true" />
-												<span>Deployment slot open</span>
-											</div>
-										)}
-									</div>
-									<p className={styles.projectCategory}>{project.category}</p>
-									<h4 className={styles.projectTitle}>{project.title}</h4>
-									<p className={styles.projectDescription}>{project.description}</p>
-									<div className={styles.stackList} aria-label={`${project.title} technology stack`}>
-										{project.stack.map((technology) => (
-											<span className={styles.stackTag} key={technology}>{technology}</span>
-										))}
-									</div>
-									<div className={styles.repoActions}>
-										<a className={styles.repoLink} href={project.repoUrl} target="_blank" rel="noreferrer">
-											<FaGithub aria-hidden="true" /> Repository
-										</a>
-										{project.liveUrl ? (
-											<a className={styles.repoLink} href={project.liveUrl} target="_blank" rel="noreferrer">
-												<FaExternalLinkAlt aria-hidden="true" /> Open app
-											</a>
-										) : (
-											<span className={styles.repoStatus}>Not deployed yet</span>
-										)}
-									</div>
-								</article>
-							)}
-						/>
 					</div>
+
+					<SortableGrid
+						items={personalProjects}
+						className={styles.personalProjectGrid}
+						storageKey="portfolio-project-order"
+						renderItem={(project) => (
+							<article className={styles.personalProjectCard}>
+								<div className={styles.projectPreview}>
+									{project.liveUrl ? (
+										<div className={styles.previewPlaceholder}>
+											<FaExternalLinkAlt aria-hidden="true" />
+											<span>Live app available</span>
+											<a className={styles.previewLink} href={project.liveUrl} target="_blank" rel="noreferrer">
+												Open preview
+											</a>
+										</div>
+									) : (
+										<div className={styles.previewPlaceholder}>
+											<FaCode aria-hidden="true" />
+											<span>Deployment slot open</span>
+										</div>
+									)}
+								</div>
+								<p className={styles.projectCategory}>{project.category}</p>
+								<h4 className={styles.projectTitle}>{project.title}</h4>
+								<p className={styles.projectDescription}>{project.description}</p>
+								<div className={styles.stackList} aria-label={`${project.title} technology stack`}>
+									{project.stack.map((technology) => (
+										<span className={styles.stackTag} key={technology}>{technology}</span>
+									))}
+								</div>
+								<div className={styles.repoActions}>
+									<a className={styles.repoLink} href={project.repoUrl} target="_blank" rel="noreferrer">
+										<FaGithub aria-hidden="true" /> Repository
+									</a>
+									{project.liveUrl ? (
+										<a className={styles.repoLink} href={project.liveUrl} target="_blank" rel="noreferrer">
+											<FaExternalLinkAlt aria-hidden="true" /> Open app
+										</a>
+									) : (
+										<span className={styles.repoStatus}>Not deployed yet</span>
+									)}
+								</div>
+							</article>
+						)}
+					/>
 				</div>
 
 				<div className={styles.repositoryShelf}>

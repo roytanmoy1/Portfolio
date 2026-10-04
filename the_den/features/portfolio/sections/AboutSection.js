@@ -1,3 +1,4 @@
+import { FaChartLine } from "react-icons/fa";
 import styles from "./Sections.module.css";
 import { portfolioData } from "../data/portfolioData";
 
@@ -47,6 +48,23 @@ const AboutSection = ({ id }) => {
 								<span className={styles.certification} key={certification}>{certification}</span>
 							))}
 						</div>
+					</article>
+					<article className={`${styles.educationCard} ${styles.leetcodeProfileCard}`}>
+						<div className={styles.labCardHeader}>
+							<span className={styles.labIcon} aria-hidden="true"><FaChartLine /></span>
+							<div>
+								<p className={styles.educationLabel}>Problem solving</p>
+								<h3 className={styles.educationTitle}>LeetCode · {portfolioData.leetcode.username}</h3>
+							</div>
+						</div>
+						<div className={styles.leetcodeStats}>
+							<div><strong>{portfolioData.leetcode.solved}</strong><span>solved</span></div>
+							<div><strong>{portfolioData.leetcode.acceptance}</strong><span>acceptance</span></div>
+							<div><strong>{portfolioData.leetcode.rank}</strong><span>global rank</span></div>
+						</div>
+						<a className={styles.projectLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
+							Open LeetCode profile
+						</a>
 					</article>
 				</div>
 			</div>

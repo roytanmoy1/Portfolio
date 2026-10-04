@@ -932,27 +932,11 @@
 }
 
 /* Lab */
-.labGrid {
-	display: grid;
-	grid-template-columns: minmax(18rem, 0.72fr) minmax(0, 1.28fr);
-	gap: 1rem;
-	align-items: start;
-}
-
-.leetcodeCard,
 .personalProjectCard,
 .repoCard {
 	border: 1px solid var(--glass-border);
 	background: var(--glass);
 	box-shadow: var(--shadow-glass);
-}
-
-.leetcodeCard {
-	position: sticky;
-	top: 7rem;
-	margin-top: 3.9rem;
-	padding: 1.35rem;
-	border-radius: 0.95rem;
 }
 
 .labCardHeader,
@@ -1008,6 +992,10 @@
 	white-space: nowrap;
 }
 
+.leetcodeStats div:last-child strong {
+	font-size: 0.82rem;
+}
+
 .leetcodeStats span {
 	margin-top: 0.2rem;
 	color: var(--text-subtle);
@@ -1040,6 +1028,7 @@
 .personalProjectGrid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-auto-rows: minmax(18rem, 1fr);
 	gap: 0.8rem;
 	align-items: stretch;
 }
@@ -1392,12 +1381,17 @@
 
 .educationGrid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-auto-rows: 1fr;
 	gap: 1rem;
+	align-items: stretch;
 	margin-top: 1rem;
 }
 
 .educationCard {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
 	padding: 1.2rem;
 	border: 1px solid var(--glass-border);
 	border-radius: 1.15rem;
@@ -1431,7 +1425,13 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.45rem;
-	margin-top: 0.7rem;
+	margin-top: auto;
+	padding-top: 0.7rem;
+}
+
+.leetcodeProfileCard .projectLink {
+	margin-top: auto;
+	padding-top: 0.9rem;
 }
 
 .certification {
@@ -1446,8 +1446,7 @@
 @container portfolio-main (max-width: 900px) {
 	.heroGrid,
 	.aboutGrid,
-	.contactLayout,
-	.labGrid {
+	.contactLayout {
 		grid-template-columns: 1fr;
 	}
 
@@ -1474,11 +1473,16 @@
 	}
 }
 
+@container portfolio-main (max-width: 760px) {
+	.educationGrid {
+		grid-template-columns: 1fr;
+	}
+}
+
 @media (max-width: 900px) {
 	.heroGrid,
 	.aboutGrid,
-	.contactLayout,
-	.labGrid {
+	.contactLayout {
 		grid-template-columns: 1fr;
 	}
 
@@ -1488,11 +1492,6 @@
 
 	.aboutIntro {
 		max-width: 42rem;
-	}
-
-	.leetcodeCard {
-		position: static;
-		margin-top: 0;
 	}
 
 	.repoGrid {
@@ -1574,10 +1573,6 @@
 	.heroPanel,
 	.contactForm {
 		border-radius: 1.15rem;
-		padding: 1rem;
-	}
-
-	.leetcodeCard {
 		padding: 1rem;
 	}
 
