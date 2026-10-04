@@ -63,6 +63,7 @@ const createId = () =>
 		: `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const connectionLabels = {
+	idle: "Ready when you are",
 	connecting: "Connecting",
 	ready: "Online",
 	offline: "Reconnecting",
@@ -98,7 +99,7 @@ const ChatPanel = () => {
 	const { isAssistantOpen, closeAssistant } = useAssistant();
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState("");
-	const [connectionState, setConnectionState] = useState("connecting");
+	const [connectionState, setConnectionState] = useState("idle");
 	const [attachments, setAttachments] = useState([]);
 	const [pendingFiles, setPendingFiles] = useState([]);
 	const [draftName, setDraftName] = useState("");
@@ -266,7 +267,7 @@ const ChatPanel = () => {
 	}, []);
 
 	useEffect(() => {
-		if (!isAssistantOpen || !isUserActive) {
+		if (!isAssistantOpen || !isUserActive || !visitorName) {
 			return undefined;
 		}
 
@@ -375,7 +376,7 @@ const ChatPanel = () => {
 			if (socketRef.current === socket) socketRef.current = null;
 			socket?.close(1000, "Connection paused");
 		};
-	}, [isAssistantOpen, isUserActive]);
+	}, [isAssistantOpen, isUserActive, visitorName]);
 
 	useEffect(() => {
 		if (!isAssistantOpen) return undefined;
@@ -547,7 +548,7 @@ const ChatPanel = () => {
 		}
 	};
 
-	const activeConnectionState = isUserActive ? connectionState : "paused";
+	const activeConnectionState = !visitorName ? "idle" : isUserActive ? connectionState : "paused";
 
 	const sendMessage = (value) => {
 		const message = value.trim() || (!contactFlowStep && attachments.length ? "Please summarize the attached files." : "");
@@ -588,12 +589,12 @@ const ChatPanel = () => {
 	if (!isAssistantOpen) return null;
 
 	return (
-				<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label="KafeeAI">
+				<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label={portfolioData.assistantName}>
 				<header className={styles.header}>
 					<div className={styles.identity}>
 						<span className={styles.botIcon} aria-hidden="true"><FaRobot /></span>
 						<div>
-							<h2>KafeeAI</h2>
+							<h2>{portfolioData.assistantName}</h2>
 						</div>
 					</div>
 					<button className={styles.closeButton} type="button" onClick={closeAssistant} aria-label="Close assistant">

@@ -11,10 +11,12 @@
 	border: 1px solid var(--glass-border);
 	border-radius: 1.1rem;
 	background: var(--glass-heavy);
-	box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
-	-webkit-backdrop-filter: blur(28px) saturate(150%);
-	backdrop-filter: blur(28px) saturate(150%);
+	box-shadow: 0 20px 56px rgba(0, 0, 0, 0.3);
 	animation: panelIn 220ms ease both;
+}
+
+:global(.light) .panel {
+	box-shadow: var(--shadow-glass);
 }
 
 .header {
@@ -105,7 +107,7 @@
 
 .statusDot.online {
 	background: var(--success-color);
-	box-shadow: 0 0 0 0.2rem rgba(120, 214, 167, 0.12);
+	box-shadow: 0 0 0 0.2rem var(--success-glow);
 }
 
 .voiceToggle,

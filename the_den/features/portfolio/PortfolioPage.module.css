@@ -4,9 +4,7 @@
 	isolation: isolate;
 	min-height: 100vh;
 	overflow: hidden;
-	background:
-		linear-gradient(180deg, var(--glass-soft), transparent 30%),
-		var(--bg-base);
+	background: var(--bg-base);
 }
 
 .assistantOpen {
@@ -14,7 +12,7 @@
 }
 
 .ambientGlow,
-.gridOverlay {
+.starField {
 	position: fixed;
 	inset: 0;
 	pointer-events: none;
@@ -23,20 +21,106 @@
 .ambientGlow {
 	z-index: -2;
 	background:
-		radial-gradient(circle at 12% 30%, var(--accent-glow), transparent 24rem),
-		radial-gradient(circle at 86% 60%, var(--secondary-glow), transparent 26rem),
-		radial-gradient(circle at 52% 105%, var(--warm-glow), transparent 22rem);
-	filter: blur(18px);
+		radial-gradient(ellipse at 14% 24%, var(--accent-glow), transparent 34rem),
+		radial-gradient(ellipse at 84% 35%, var(--secondary-glow), transparent 39rem),
+		radial-gradient(ellipse at 54% 105%, var(--warm-glow), transparent 33rem),
+		radial-gradient(ellipse at 47% 58%, var(--nebula-blue), transparent 47rem);
+	background-size: 140% 140%, 150% 145%, 135% 140%, 145% 150%;
+	background-position: 0% 0%, 100% 35%, 50% 100%, 45% 52%;
 }
 
-.gridOverlay {
+:global(.light) .ambientGlow {
+	background:
+		radial-gradient(ellipse at 10% 8%, rgba(159, 67, 45, 0.045), transparent 27rem),
+		radial-gradient(ellipse at 91% 16%, rgba(61, 100, 83, 0.05), transparent 31rem);
+	animation: none;
+}
+
+.ambientGlow::before,
+.ambientGlow::after {
+	position: absolute;
+	inset: -15%;
+	content: "";
+	pointer-events: none;
+}
+
+.ambientGlow::before {
+	opacity: 0.62;
+	background:
+		radial-gradient(ellipse 48% 34% at 24% 50%, var(--accent-glow), transparent 76%),
+		radial-gradient(ellipse 43% 30% at 74% 34%, var(--nebula-blue), transparent 77%);
+	filter: blur(42px);
+	transform: scale(1.04);
+	transform-origin: center;
+}
+
+.ambientGlow::after {
+	opacity: 0.58;
+	background:
+		radial-gradient(ellipse 40% 46% at 82% 72%, var(--secondary-glow), transparent 74%),
+		radial-gradient(ellipse 34% 32% at 14% 79%, var(--warm-glow), transparent 72%);
+	filter: blur(54px);
+	transform: scale(1.08);
+	transform-origin: center;
+}
+
+:global(.light) .ambientGlow::before,
+:global(.light) .ambientGlow::after {
+	display: none;
+}
+
+.starField {
 	z-index: -1;
-	opacity: 0.25;
-	background-image: linear-gradient(var(--glass-border) 1px, transparent 1px),
-		linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
-	background-size: 5rem 5rem;
-	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 86%);
-	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 86%);
+	opacity: 0.78;
+	background-image:
+		radial-gradient(1px 1px at 19px 31px, var(--star-dim) 98%, transparent 100%),
+		radial-gradient(1px 1px at 92px 72px, var(--star-bright) 98%, transparent 100%),
+		radial-gradient(1.5px 1.5px at 177px 124px, var(--star-core) 98%, transparent 100%),
+		radial-gradient(1px 1px at 233px 196px, var(--star-dim) 98%, transparent 100%);
+	background-size: 257px 241px, 337px 319px, 421px 397px, 503px 487px;
+	background-repeat: repeat;
+	animation: none;
+}
+
+:global(.light) .starField {
+	opacity: 0.38;
+	animation: none;
+}
+
+.starField::before,
+.starField::after {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	content: "";
+	pointer-events: none;
+	background-repeat: repeat;
+}
+
+.starField::before {
+	opacity: 0.68;
+	background-image:
+		radial-gradient(1.5px 1.5px at 67px 79px, var(--star-bright) 98%, transparent 100%),
+		radial-gradient(1px 1px at 221px 137px, var(--star-core) 98%, transparent 100%);
+	background-size: 307px 293px, 467px 421px;
+	animation: none;
+}
+
+.starField::after {
+	opacity: 0.36;
+	background-image:
+		radial-gradient(1px 1px at 99px 42px, var(--star-bright) 98%, transparent 100%),
+		radial-gradient(1.5px 1.5px at 247px 180px, var(--star-core) 98%, transparent 100%);
+	background-size: 353px 379px, 523px 487px;
+	animation: none;
+}
+
+:global(.light) .starField::before {
+	opacity: 0.3;
+}
+
+:global(.light) .starField::after {
+	opacity: 0.16;
 }
 
 .main {

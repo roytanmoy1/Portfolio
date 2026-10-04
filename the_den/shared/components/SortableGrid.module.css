@@ -2,7 +2,6 @@
 	position: relative;
 	min-width: 0;
 	height: 100%;
-	will-change: transform;
 }
 
 .item > article,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaGithub, FaExternalLinkAlt, FaCode, FaChartLine } from "react-icons/fa";
 import styles from "./Sections.module.css";
 import SortableGrid from "@/shared/components/SortableGrid";
@@ -39,8 +39,12 @@ const LabSection = ({ id }) => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [showAll, setShowAll] = useState(false);
+	const sectionRef = useRef(null);
 
 	useEffect(() => {
+		const section = sectionRef.current;
+		if (!section) return undefined;
+
 		const controller = new AbortController();
 
 		const loadRepositories = async () => {
@@ -76,8 +80,22 @@ const LabSection = ({ id }) => {
 			}
 		};
 
-		loadRepositories();
-		return () => controller.abort();
+		if (typeof window.IntersectionObserver !== "function") {
+			void loadRepositories();
+			return () => controller.abort();
+		}
+
+		const observer = new IntersectionObserver((entries) => {
+			if (!entries.some((entry) => entry.isIntersecting)) return;
+			observer.disconnect();
+			void loadRepositories();
+		}, { rootMargin: "480px 0px" });
+		observer.observe(section);
+
+		return () => {
+			observer.disconnect();
+			controller.abort();
+		};
 	}, []);
 
 	const featuredNames = useMemo(
@@ -88,7 +106,7 @@ const LabSection = ({ id }) => {
 	const visibleRepositories = showAll ? repositoryShelf : repositoryShelf.slice(0, 8);
 
 	return (
-		<section id={id} className={styles.section}>
+		<section id={id} ref={sectionRef} className={styles.section}>
 			<div className={styles.sectionInner}>
 				<div className={styles.sectionHeading}>
 					<p className={styles.sectionEyebrow}>Personal lab</p>

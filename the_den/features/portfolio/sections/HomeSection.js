@@ -1,6 +1,6 @@
 "use client";
 
-import { FaArrowDown, FaEnvelope, FaLinkedinIn, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
+import { FaArrowDown, FaEnvelope, FaExternalLinkAlt, FaLinkedinIn, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import Image from "next/image";
 import styles from "./Sections.module.css";
 import { portfolioData } from "../data/portfolioData";
@@ -105,19 +105,20 @@ const HomeSection = ({ id }) => {
 									LinkedIn
 								</span>
 							</a>
-							<div className={styles.locationMap}>
-								<iframe
-									title="Map showing Bengaluru, India"
-									src="https://www.google.com/maps?q=Bengaluru%2C%20India&z=11&t=k&output=embed"
-									loading="lazy"
-									referrerPolicy="no-referrer-when-downgrade"
-									allowFullScreen
-								/>
-								<div className={styles.locationCaption}>
-									<FaMapMarkerAlt aria-hidden="true" />
-									<span><small>Based in</small>{portfolioData.location}</span>
-								</div>
-							</div>
+							<a
+								className={styles.locationMap}
+								href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(portfolioData.location)}`}
+								target="_blank"
+								rel="noreferrer"
+								aria-label={`View ${portfolioData.location} on Google Maps`}
+							>
+								<FaMapMarkerAlt aria-hidden="true" />
+								<span className={styles.locationDetails}>
+									<small>Based in</small>
+									<strong>{portfolioData.location}</strong>
+								</span>
+								<span className={styles.locationOpen}>View map <FaExternalLinkAlt aria-hidden="true" /></span>
+							</a>
 						</div>
 					</aside>
 				</div>

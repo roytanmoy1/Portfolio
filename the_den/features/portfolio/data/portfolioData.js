@@ -1,6 +1,7 @@
 export const portfolioData = {
 	name: "Tanmoy Kumar Roy",
 	shortName: "Tanmoy Roy",
+	assistantName: "Ask Tanmoy",
 	title: "Consultant · Full Stack Engineer",
 	location: "Bengaluru, India",
 	email: "roytanmoy.main@gmail.com",

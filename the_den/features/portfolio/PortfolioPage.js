@@ -16,7 +16,7 @@ const PortfolioContent = () => {
 	return (
 		<div className={`${styles.container} ${isAssistantOpen ? styles.assistantOpen : ""}`}>
 			<div className={styles.ambientGlow} aria-hidden="true" />
-			<div className={styles.gridOverlay} aria-hidden="true" />
+			<div className={styles.starField} aria-hidden="true" />
 			<a className={styles.skipLink} href="#main-content">
 				Skip to main content
 			</a>
