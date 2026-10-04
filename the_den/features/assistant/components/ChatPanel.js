@@ -588,13 +588,12 @@ const ChatPanel = () => {
 	if (!isAssistantOpen) return null;
 
 	return (
-		<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label="Tanmoy portfolio assistant">
+				<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label="KafeeAI">
 				<header className={styles.header}>
 					<div className={styles.identity}>
 						<span className={styles.botIcon} aria-hidden="true"><FaRobot /></span>
 						<div>
-							<h2>Ask about Tanmoy</h2>
-							<p>Portfolio-only assistant</p>
+							<h2>KafeeAI</h2>
 						</div>
 					</div>
 					<button className={styles.closeButton} type="button" onClick={closeAssistant} aria-label="Close assistant">

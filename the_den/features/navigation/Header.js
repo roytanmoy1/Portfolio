@@ -53,7 +53,7 @@ const Header = () => {
 	};
 
 	return (
-		<header className={styles.header}>
+		<header className={`${styles.header} ${isAssistantOpen ? styles.assistantOpen : ""}`}>
 			<div className={styles.logo}>
 				<Link href="#home" onClick={() => scrollToSection("home")} aria-label="Tanmoy Kumar Roy home">
 					<span className={styles.logoMark}>
@@ -99,10 +99,10 @@ const Header = () => {
 						setIsMenuOpen(false);
 						toggleAssistant();
 					}}
-					aria-label={isAssistantOpen ? "Close portfolio assistant" : "Open portfolio assistant"}
+					aria-label={isAssistantOpen ? "Close KafeeAI" : "Open KafeeAI"}
 					aria-expanded={isAssistantOpen}
 					aria-controls="portfolio-assistant"
-					title="Portfolio assistant"
+					title="KafeeAI"
 					type="button"
 				>
 					<FaRobot aria-hidden="true" />

@@ -18,6 +18,15 @@
 	z-index: 1000;
 }
 
+@media (min-width: 901px) {
+	.header.assistantOpen {
+		left: auto;
+		right: calc(var(--assistant-width) + 2.5rem);
+		width: min(1280px, calc(100% - var(--assistant-width) - 4rem));
+		transform: none;
+	}
+}
+
 .logo a {
 	display: inline-flex;
 	align-items: center;
@@ -52,7 +61,7 @@
 
 .logoText strong {
 	font-size: 0.98rem;
-	letter-spacing: -0.02em;
+	letter-spacing: 0;
 }
 
 .logoText small {
@@ -227,6 +236,16 @@
 
 	.hamburger span {
 		width: 0.95rem;
+	}
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+	.header.assistantOpen .nav {
+		display: none;
+	}
+
+	.header.assistantOpen .hamburger {
+		display: grid;
 	}
 }
 

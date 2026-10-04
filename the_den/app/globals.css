@@ -32,7 +32,7 @@
 	--space-md: 1.4rem;
 	--space-lg: 2.4rem;
 	--space-xl: 5rem;
-	--section-spacing: clamp(5rem, 10vw, 8rem);
+	--section-spacing: clamp(3.75rem, 6vw, 6rem);
 	--element-spacing: clamp(0.8rem, 1.5vw, 1.25rem);
 }
 
@@ -156,7 +156,7 @@ svg {
 
 @media (max-width: 700px) {
 	:root {
-		--section-spacing: clamp(3.25rem, 10vw, 4.5rem);
+		--section-spacing: clamp(2.75rem, 8vw, 3.5rem);
 	}
 }
 

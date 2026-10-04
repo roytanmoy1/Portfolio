@@ -5,7 +5,7 @@
 	bottom: 1rem;
 	z-index: 990;
 	display: flex;
-	width: 20vw;
+	width: var(--assistant-width, 20vw);
 	overflow: hidden;
 	flex-direction: column;
 	border: 1px solid var(--glass-border);

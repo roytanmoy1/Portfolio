@@ -55,10 +55,10 @@
 .sectionTitle {
 	margin: 0;
 	color: var(--text-primary);
-	font-size: clamp(2rem, 4vw, 3.5rem);
+	font-size: 2.5rem;
 	font-weight: 800;
-	letter-spacing: -0.055em;
-	line-height: 1.02;
+	letter-spacing: 0;
+	line-height: 1.08;
 }
 
 .sectionLead {
@@ -105,10 +105,10 @@
 	max-width: 48rem;
 	margin: 0;
 	color: var(--text-primary);
-	font-size: clamp(3.2rem, 8vw, 7rem);
+	font-size: 5rem;
 	font-weight: 850;
-	letter-spacing: -0.085em;
-	line-height: 0.94;
+	letter-spacing: 0;
+	line-height: 1;
 }
 
 .titleAccent {
@@ -123,7 +123,7 @@
 	max-width: 41rem;
 	margin: 1.7rem 0 0;
 	color: var(--text-muted);
-	font-size: clamp(1rem, 1.5vw, 1.18rem);
+	font-size: 1.08rem;
 	line-height: 1.85;
 }
 
@@ -579,9 +579,9 @@
 .experienceRole {
 	margin: 0;
 	color: var(--text-primary);
-	font-size: clamp(1.05rem, 2vw, 1.35rem);
+	font-size: 1.2rem;
 	font-weight: 800;
-	letter-spacing: -0.03em;
+	letter-spacing: 0;
 }
 
 .company {
@@ -875,7 +875,7 @@
 	color: var(--text-primary);
 	font-size: 1.28rem;
 	font-weight: 800;
-	letter-spacing: -0.04em;
+	letter-spacing: 0;
 }
 
 .projectDescription {
@@ -975,7 +975,7 @@
 .leetcodeStats strong {
 	overflow: hidden;
 	color: var(--text-primary);
-	font-size: clamp(0.95rem, 2vw, 1.25rem);
+	font-size: 1.1rem;
 	font-weight: 850;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -1185,10 +1185,10 @@
 .contactTitle {
 	margin: 0;
 	color: var(--text-primary);
-	font-size: clamp(2.2rem, 5vw, 4.4rem);
+	font-size: 3.25rem;
 	font-weight: 850;
-	letter-spacing: -0.07em;
-	line-height: 0.98;
+	letter-spacing: 0;
+	line-height: 1.04;
 }
 
 .contactDescription {
@@ -1418,6 +1418,37 @@
 	color: var(--text-muted);
 	font-size: 0.67rem;
 	font-weight: 700;
+}
+
+@container portfolio-main (max-width: 900px) {
+	.heroGrid,
+	.aboutGrid,
+	.contactLayout,
+	.labGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.heroGrid {
+		gap: 2rem;
+	}
+
+	.heroPanel {
+		max-width: 38rem;
+	}
+
+	.heroTitle {
+		font-size: 3.5rem;
+	}
+
+	.sectionTitle,
+	.contactTitle {
+		font-size: 2.1rem;
+	}
+
+	.heroLead {
+		font-size: 1rem;
+		line-height: 1.65;
+	}
 }
 
 @media (max-width: 900px) {
