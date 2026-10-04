@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FaGithub, FaExternalLinkAlt, FaCode, FaChartLine } from "react-icons/fa";
 import styles from "./Sections.module.css";
-import SortableGrid from "./SortableGrid";
+import SortableGrid from "@/shared/components/SortableGrid";
 import { portfolioData } from "../data/portfolioData";
 
 const githubApiUrl = "https://api.github.com/users/roytanmoy1/repos?per_page=100&sort=updated";
@@ -92,11 +92,7 @@ const LabSection = ({ id }) => {
 			<div className={styles.sectionInner}>
 				<div className={styles.sectionHeading}>
 					<p className={styles.sectionEyebrow}>Personal lab</p>
-					<h2 className={styles.sectionTitle}>The work I build when curiosity gets loud.</h2>
-					<p className={styles.sectionLead}>
-						A clearer home for side projects, experiments, and problem-solving practice.
-						Each project has a repository link, and deployed work gets a live preview slot.
-					</p>
+					<h2 className={styles.sectionTitle}>Personal projects and practice.</h2>
 				</div>
 
 				<div className={styles.labGrid}>

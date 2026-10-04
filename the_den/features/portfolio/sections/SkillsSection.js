@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./Sections.module.css";
-import SortableGrid from "./SortableGrid";
+import SortableGrid from "@/shared/components/SortableGrid";
 import { portfolioData } from "../data/portfolioData";
 
 const skillGroups = portfolioData.skills.map((group) => ({
@@ -15,12 +15,8 @@ const SkillsSection = ({ id }) => {
 		<section id={id} className={styles.section}>
 			<div className={styles.sectionInner}>
 				<div className={styles.sectionHeading}>
-					<p className={styles.sectionEyebrow}>Tools of the trade</p>
-					<h2 className={styles.sectionTitle}>A versatile engineering toolkit.</h2>
-					<p className={styles.sectionLead}>
-						The stack changes with the problem. The standards do not: clear interfaces,
-						observable systems, secure defaults, and thoughtful UX.
-					</p>
+					<p className={styles.sectionEyebrow}>Technical skills</p>
+					<h2 className={styles.sectionTitle}>Core technologies.</h2>
 				</div>
 
 				<SortableGrid

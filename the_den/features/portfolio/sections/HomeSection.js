@@ -17,8 +17,8 @@ const HomeSection = ({ id }) => {
 					<div className={styles.heroCopy}>
 						<p className={styles.eyebrow}>Consultant · Full Stack Engineer</p>
 						<h1 className={styles.heroTitle}>
-							Building products
-							<span className={styles.titleAccent}>people remember.</span>
+							Tanmoy
+							<span className={styles.titleAccent}>Kumar Roy</span>
 						</h1>
 						<p className={styles.heroLead}>{portfolioData.profile}</p>
 
@@ -45,7 +45,7 @@ const HomeSection = ({ id }) => {
 							<a className={styles.textLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
 								LeetCode
 						</a>
-							<a className={styles.textLink} href="#contact-form">
+							<a className={styles.textLink} href={`mailto:${portfolioData.email}`}>
 								Send a message
 							</a>
 						</div>
@@ -84,7 +84,7 @@ const HomeSection = ({ id }) => {
 						</div>
 
 						<div className={styles.contactStrip}>
-							<a className={styles.contactItem} href="#contact-form">
+							<a className={styles.contactItem} href={`mailto:${portfolioData.email}`}>
 								<FaEnvelope className={styles.contactIcon} aria-hidden="true" />
 								<span className={styles.contactText}>
 									<span className={styles.contactLabel}>Email</span>

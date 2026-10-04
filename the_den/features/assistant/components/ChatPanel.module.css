@@ -82,6 +82,12 @@
 	font-weight: 750;
 }
 
+.statusActions {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
 .connectionStatus {
 	display: flex;
 	align-items: center;
@@ -121,6 +127,29 @@
 	flex: 0 0 auto;
 	width: 1.85rem;
 	height: 1.85rem;
+}
+
+.contactButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	min-height: 1.85rem;
+	padding: 0 0.55rem;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.55rem;
+	background: var(--glass-soft);
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 0.58rem;
+	font-weight: 750;
+	transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.contactButton:hover,
+.contactButton:focus-visible {
+	border-color: var(--accent-border);
+	background: var(--accent-transparent);
+	color: var(--accent-color);
 }
 
 .voiceToggle:hover,
@@ -163,6 +192,28 @@
 	line-height: 1.55;
 }
 
+.contactCta {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-height: 2.2rem;
+	margin-top: 0.85rem;
+	padding: 0 0.75rem;
+	border: 1px solid var(--accent-border);
+	border-radius: 0.65rem;
+	background: var(--accent-transparent);
+	color: var(--text-primary);
+	cursor: pointer;
+	font-size: 0.65rem;
+	font-weight: 800;
+}
+
+.contactCta:hover,
+.contactCta:focus-visible {
+	background: var(--accent-color);
+	color: var(--on-accent);
+}
+
 .message {
 	max-width: 88%;
 	padding: 0.7rem 0.8rem;
@@ -173,6 +224,41 @@
 	line-height: 1.55;
 	white-space: pre-wrap;
 	word-break: break-word;
+}
+
+.messageText {
+	display: block;
+}
+
+.sentAttachments {
+	display: grid;
+	gap: 0.35rem;
+	margin: 0.55rem 0 0;
+	padding: 0.5rem 0 0;
+	border-top: 1px solid var(--glass-border);
+	list-style: none;
+	white-space: normal;
+}
+
+.sentAttachment {
+	display: grid;
+	grid-template-columns: 0.7rem minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+	color: var(--text-muted);
+	font-size: 0.6rem;
+}
+
+.sentAttachment > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.sentAttachment small {
+	color: var(--text-subtle);
+	font-size: 0.55rem;
 }
 
 .assistant,
@@ -255,7 +341,8 @@
 	gap: 0.35rem;
 }
 
-.composerRow input {
+.composerRow input,
+.composerRow textarea {
 	min-width: 0;
 	height: 2.5rem;
 	padding: 0 0.65rem;
@@ -267,12 +354,26 @@
 	font-size: 0.72rem;
 }
 
-.composerRow input:focus {
+.composerRow textarea {
+	padding-block: 0.35rem;
+	line-height: 1.2;
+	resize: none;
+}
+
+.composerRow input:focus,
+.composerRow textarea:focus {
 	border-color: var(--accent-border);
 }
 
-.composerRow input::placeholder {
+.composerRow input::placeholder,
+.composerRow textarea::placeholder {
 	color: var(--text-subtle);
+}
+
+.composerRow input:disabled,
+.composerRow textarea:disabled {
+	cursor: wait;
+	opacity: 0.72;
 }
 
 .sendButton {
@@ -445,6 +546,13 @@
 	padding: 0 0.65rem 0.65rem;
 }
 
+.uploadError {
+	margin: 0 0.65rem 0.65rem;
+	color: var(--error-color);
+	font-size: 0.62rem;
+	line-height: 1.45;
+}
+
 .fileReview h4 {
 	margin: 0 0 0.35rem;
 	color: var(--text-subtle);
@@ -614,7 +722,7 @@
 
 @media (min-width: 701px) and (max-width: 1100px) {
 	.panel {
-		top: 4.1rem;
+		top: 4.5rem;
 		right: 0.6rem;
 		bottom: 0.6rem;
 		width: min(22rem, 42vw);
@@ -634,6 +742,10 @@
 
 	.header {
 		padding: 0.65rem;
+	}
+
+	.contactButton span {
+		display: none;
 	}
 
 	.botIcon,

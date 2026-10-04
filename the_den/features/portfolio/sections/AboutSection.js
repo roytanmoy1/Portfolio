@@ -6,20 +6,16 @@ const AboutSection = ({ id }) => {
 		<section id={id} className={styles.section}>
 			<div className={styles.sectionInner}>
 				<div className={styles.sectionHeading}>
-					<p className={styles.sectionEyebrow}>The short version</p>
-					<h2 className={styles.sectionTitle}>A builder who likes the hard parts.</h2>
+					<p className={styles.sectionEyebrow}>Profile</p>
+					<h2 className={styles.sectionTitle}>Product delivery across architecture and engineering.</h2>
 				</div>
 
 				<div className={styles.aboutGrid}>
 					<div className={styles.aboutIntro}>
 						<p>
-							I&apos;m a <strong>full stack engineer</strong> based in Bengaluru, focused on
-							making complex products feel simple. My work sits at the intersection of
-							<strong> modern JavaScript, cloud architecture, real-time systems, and AI</strong>.
+							I work across product discovery, architecture, and delivery. Recent projects include
+							<strong> enterprise analytics, conversational AI, and cloud-native services</strong>.
 						</p>
-						<span className={styles.introQuote}>
-							&ldquo;Good engineering is invisible when it works beautifully.&rdquo;
-						</span>
 					</div>
 
 					<div className={styles.aboutPoints}>

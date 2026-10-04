@@ -1,6 +1,6 @@
 # Tanmoy Kumar Roy — Portfolio
 
-A data-driven Next.js portfolio with a glassmorphism interface, responsive navigation, theme switching, project filtering, resume download, and direct SMTP contact delivery.
+A data-driven portfolio for Tanmoy Kumar Roy, built with Next.js, React, and CSS Modules. It includes a responsive portfolio, project sorting, an authenticated AI assistant, file analysis, and contact workflows.
 
 ## Run locally
 
@@ -18,9 +18,18 @@ npm run build
 npm run start
 ```
 
+## Stack and architecture
+
+- Frontend: Next.js 16 App Router, React 19, JavaScript, CSS Modules, and React Icons.
+- Web backend: Node.js Next.js route handlers for contact delivery, portfolio data, and short-lived chat tokens.
+- Assistant backend: a Node.js 24 Neon Function using WebSockets, Neon Postgres, and Gemini.
+- Data and delivery: Neon Postgres and authenticated Gmail SMTP through Nodemailer.
+
+`app/` contains route entrypoints and global styles. Feature code is grouped under `features/assistant`, `features/contact`, `features/navigation`, `features/portfolio`, and `features/theme`. The Neon entrypoint stays at `functions/chat.js`, which re-exports the assistant implementation from `features/assistant/server`; reusable sortable UI lives in `shared/components`, and server-only database access lives in `server`. Portfolio sections share one feature-owned CSS Module, while the assistant, navigation, and sortable grid keep focused CSS Modules. See [docs/api.md](docs/api.md) for HTTP and WebSocket contracts.
+
 ## Contact form
 
-The form posts to the server route at `/api/contact`. The route validates content type, origin, body size, field lengths, email format, control characters, a honeypot field, and a lightweight per-instance rate limit before storing the message in Neon and sending it through authenticated SMTP. The visitor address is used as `Reply-To`; the authenticated mailbox remains the sender so SPF and DMARC checks are preserved.
+The form posts to `/api/contact`. The route normalizes and validates fields, checks origin and body size, applies a honeypot and per-instance rate limit, and stores validated submissions in Neon when configured. SMTP is the primary sender; the visitor's address is used as `Reply-To` while the authenticated mailbox remains the sender.
 
 For Gmail, enable 2-Step Verification, create an app password, and set these server-only values in `.env.local` and Vercel:
 
@@ -34,19 +43,23 @@ SMTP_FROM_EMAIL=you@gmail.com
 CONTACT_TO_EMAIL=you@gmail.com
 ```
 
-Use the mailbox address for `SMTP_FROM_EMAIL`. `CONTACT_TO_EMAIL` may be any inbox that should receive portfolio enquiries. If SMTP rejects a delivery, the form reports an error while the validated submission remains retained in Neon.
+Use the mailbox address for `SMTP_FROM_EMAIL`; `CONTACT_TO_EMAIL` is the inbox that should receive enquiries. HTTP 200 means the configured SMTP server accepted the message for delivery. If SMTP authentication fails, the route returns an error instead of reporting a successful send. Validated submissions remain in Neon when database storage is configured.
+
+A production `EAUTH` / SMTP `535` log means Gmail rejected `SMTP_PASS`; create a current 16-character Gmail app password and replace `SMTP_PASS` in Vercel. Never paste the password into chat. The contact test is `npm run test:contact`.
 
 Never commit `.env.local`, mailbox passwords, or app passwords.
 
 ## Portfolio assistant
 
-The header robot control opens a responsive right-side assistant over an authenticated WebSocket. The browser obtains a two-minute, origin-bound JWT from `/api/chat/token`, then connects directly to the `portfoliochat` Neon Function. Gemini credentials remain only in the Function environment.
+The header robot control opens a responsive right-side assistant over an authenticated WebSocket. The browser obtains a two-minute, origin-bound JWT from `/api/chat/token`, then connects directly to the `portfoliochat` Neon Function. Gemini credentials remain only in the Function environment. The complete HTTP and WebSocket contract is documented in [docs/api.md](docs/api.md).
 
-The panel opens by default on desktop and zoomed fine-pointer layouts. Actual mobile devices start with it closed and open a compact bottom sheet from the header robot control. Before chat controls appear, the visitor must provide a 2–60 character display name; the name is held only in the live socket session. Native browser speech recognition can fill the prompt from the microphone, and spoken replies are opt-in. Browser support and microphone permission determine voice availability; typed chat remains the fallback.
+The panel starts closed on all devices and opens from the header robot control. It appears as a responsive right-side assistant on desktop and a compact bottom sheet on actual mobile devices. Before chat controls appear, the visitor must provide a 2–60 character display name; the normalized name accompanies retained audit rows described below. Native browser speech recognition can fill the prompt from the microphone, and spoken replies are opt-in. Browser support and microphone permission determine voice availability; typed chat remains the fallback.
 
 Visitors may attach up to five `.pdf`, `.txt`, or modern Excel `.xlsx` files, with a hard limit of 2 MiB each. The paperclip opens a review dialog where files are chosen or dropped, inspected, removed, and explicitly saved before upload. Legacy `.xls` is intentionally unsupported. Both client and Function validate the limits; the Function also verifies PDF/TXT signatures or parses the XLSX package with expansion, sheet, row, column, cell, and extracted-text caps. Files are SHA-256 hashed, encrypted with AES-256-GCM before insertion, scoped to the anonymous HttpOnly-cookie session, unavailable through any public download route, and excluded from queries after 24 hours. Uploaded content is untrusted context, never model instructions.
 
-Chat exchanges are written to `chat_messages` for later portfolio analytics. Rows contain the anonymous session ID, normalized visitor name, redacted question, final response, status, model label, attachment count, and timestamps. Tokens, hidden prompts, file contents, and detected key/password values are never logged. Rows expire from application queries after 90 days and are deleted opportunistically as new messages arrive.
+After the required visitor name is entered, ask the assistant to email Tanmoy. It collects the sender's name, reply email, and message one at a time in the transcript, validates each answer, then posts once to the same `/api/contact` route as the full-page form. The assistant never handles SMTP credentials.
+
+Chat exchanges are written to `chat_messages` for later portfolio analytics. Rows contain the anonymous session ID, normalized visitor name, redacted question, final response, status, model label, attachment count, and timestamps. On an authenticated reconnect, the Function restores up to four answered exchanges from the same session and previous 24 hours; it never accepts conversation history from the browser. Tokens, hidden prompts, file contents, and detected key/password values are never logged. Rows expire from application queries after 90 days and are deleted opportunistically as new messages arrive.
 
 Security controls include:
 
@@ -100,7 +113,7 @@ To deploy the updated version on Vercel:
 
 ## Data and database
 
-The portfolio uses Neon Postgres as an optional server-side data layer. The schema is in [db/schema.sql](db/schema.sql), and [scripts/seed-neon.mjs](scripts/seed-neon.mjs) stores the current portfolio data as JSONB in `portfolio_content`. Contact submissions are stored in `contact_messages` when `DATABASE_URL` is configured. The static data in [app/data/portfolioData.js](app/data/portfolioData.js) remains the source used by the client build and is the fallback when Neon is not configured.
+The portfolio uses Neon Postgres as an optional server-side data layer. The schema is in [db/schema.sql](db/schema.sql), and [scripts/seed-neon.mjs](scripts/seed-neon.mjs) stores the current portfolio data as JSONB in `portfolio_content`. Contact submissions are stored in `contact_messages` when `DATABASE_URL` is configured. Static portfolio content in [features/portfolio/data/portfolioData.js](features/portfolio/data/portfolioData.js) remains the build-time source and fallback when Neon is not configured.
 
 Set up Neon locally:
 
@@ -116,4 +129,4 @@ Use `/api/portfolio` to confirm that the portfolio row is available. Use the Neo
 
 The Lab section separates enterprise case studies from personal projects and loads the public, non-fork repositories from GitHub. It shows live preview panels only for projects with an explicitly configured `liveUrl`; other repositories remain clearly marked as not deployed. Each GitHub repository needs its own deployment configuration, build command, environment variables, and service credentials. The portfolio cannot safely deploy all repositories automatically without access to the hosting account and project-specific configuration.
 
-For the Vercel workflow, import each repository as its own Vercel project, configure its root directory and environment variables, then add the resulting URL to that project's `liveUrl` entry in [app/data/portfolioData.js](app/data/portfolioData.js). You can also set the repository's GitHub homepage so the repository shelf can discover it. Deployment tokens should stay outside this repository.
+For the Vercel workflow, import each repository as its own Vercel project, configure its root directory and environment variables, then add the resulting URL to that project's `liveUrl` entry in [features/portfolio/data/portfolioData.js](features/portfolio/data/portfolioData.js). You can also set the repository's GitHub homepage so the repository shelf can discover it. Deployment tokens should stay outside this repository.

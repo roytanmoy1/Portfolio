@@ -12,8 +12,8 @@ const ExperienceSection = ({ id }) => {
 		<section id={id} className={styles.section}>
 			<div className={styles.sectionInner}>
 				<div className={styles.sectionHeading}>
-					<p className={styles.sectionEyebrow}>Where I&apos;ve made impact</p>
-					<h2 className={styles.sectionTitle}>Experience that compounds.</h2>
+					<p className={styles.sectionEyebrow}>Experience</p>
+					<h2 className={styles.sectionTitle}>Enterprise roles and delivery.</h2>
 					<p className={styles.sectionLead}>
 						From enterprise analytics to Generative AI platforms, I&apos;ve worked across
 						architecture, delivery, and the details that make products reliable.

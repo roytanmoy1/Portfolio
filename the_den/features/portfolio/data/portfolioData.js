@@ -10,7 +10,7 @@ export const portfolioData = {
 	resume: "/TanmoyKumarRoy_Resume.pdf",
 	photo: "/unnamed.jpg",
 	profile:
-		"Consultant and Lead Full Stack Engineer building high-performance web applications and enterprise Generative AI platforms. I connect product thinking, modern JavaScript engineering, and cloud architecture to ship secure, scalable products from concept to production.",
+		"I lead full-stack delivery for enterprise web applications and Generative AI platforms. My work spans JavaScript, cloud architecture, real-time systems, and production reliability.",
 	highlights: [
 		{ value: "5+", label: "years in product engineering" },
 		{ value: "6+", label: "enterprise apps delivered" },

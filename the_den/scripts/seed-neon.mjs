@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import { portfolioData } from "../app/data/portfolioData.js";
+import { portfolioData } from "../features/portfolio/data/portfolioData.js";
 
 const databaseUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!databaseUrl) {

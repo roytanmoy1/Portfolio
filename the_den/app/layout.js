@@ -1,17 +1,12 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "./ThemeContext";
-import { portfolioData } from "./data/portfolioData";
+import { ThemeProvider } from "@/features/theme/ThemeContext";
+import { portfolioData } from "@/features/portfolio/data/portfolioData";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tanmoyroy.vercel.app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -98,7 +93,7 @@ export default function RootLayout({ children }) {
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
-			<body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={geistSans.variable}>
 				<ThemeProvider>{children}</ThemeProvider>
 			</body>
 		</html>

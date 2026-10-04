@@ -39,7 +39,7 @@ const getMailConfiguration = () => {
 
 export async function sendContactEmail({ name, email, message }) {
 	const mail = getMailConfiguration();
-	if (!mail) return { accepted: false, configured: false };
+	if (!mail) return { accepted: false, configured: false, provider: null };
 
 	const transporter = nodemailer.createTransport({
 		host: mail.host,
@@ -74,5 +74,5 @@ export async function sendContactEmail({ name, email, message }) {
 		].join("\n"),
 	});
 
-	return { accepted: Boolean(delivery.accepted?.length), configured: true };
+	return { accepted: Boolean(delivery.accepted?.length), configured: true, provider: "smtp" };
 }

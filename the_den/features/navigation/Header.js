@@ -4,9 +4,9 @@ import styles from "./Header.module.css";
 import Link from "next/link";
 import Image from "next/image";
 import { FaSun, FaMoon, FaRobot } from "react-icons/fa";
-import { useTheme } from "../ThemeContext";
-import { useAssistant } from "../AssistantContext";
-import { portfolioData } from "../data/portfolioData";
+import { useTheme } from "../theme/ThemeContext";
+import { useAssistant } from "../assistant/context/AssistantContext";
+import { portfolioData } from "../portfolio/data/portfolioData";
 
 const navigationItems = [
 	{ id: "home", label: "Home" },
@@ -22,6 +22,13 @@ const Header = () => {
 	const { darkMode, toggleDarkMode } = useTheme();
 	const { isAssistantOpen, toggleAssistant } = useAssistant();
 	const menuButtonRef = useRef(null);
+	const assistantButtonRef = useRef(null);
+	const wasAssistantOpenRef = useRef(isAssistantOpen);
+
+	useEffect(() => {
+		if (wasAssistantOpenRef.current && !isAssistantOpen) assistantButtonRef.current?.focus();
+		wasAssistantOpenRef.current = isAssistantOpen;
+	}, [isAssistantOpen]);
 
 	useEffect(() => {
 		if (!isMenuOpen) return undefined;
@@ -86,6 +93,7 @@ const Header = () => {
 
 			<div className={styles.rightSection}>
 				<button
+					ref={assistantButtonRef}
 					className={`${styles.assistantToggle} ${isAssistantOpen ? styles.active : ""}`}
 					onClick={() => {
 						setIsMenuOpen(false);

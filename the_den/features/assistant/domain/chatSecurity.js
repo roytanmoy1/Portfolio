@@ -26,11 +26,28 @@ const aiProjectsPattern = /\b(?:which|what|show|list|describe|tell)\b.{0,40}\bpr
 const currentRolePattern = /\b(?:current|present|now)\b.{0,30}\b(?:role|job|position|work)\b|\bwhat does tanmoy do\b/i;
 const cloudSkillsPattern = /\b(?:summarize|summary|describe|what are)\b.{0,40}\b(?:cloud|aws|azure)\b.{0,20}\bskills?\b|\bcloud skills?\b/i;
 const contactPattern = /\b(?:how|where)\b.{0,25}\b(?:contact|reach|email|call)\b.{0,20}\btanmoy\b|\bcontact details?\b/i;
+const roleProjectsFollowUpPattern = /\bwhich projects?\b.{0,40}\b(?:recent )?impact\b/i;
+const roleSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\bsupport\b.{0,20}\b(?:this|his|the) role\b/i;
+const projectSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\b(?:those|the) projects?\b.{0,20}\bdemonstrate\b/i;
+const leadershipProjectFollowUpPattern = /\bwhich project\b.{0,30}\b(?:best )?shows?\b.{0,20}\bleadership\b/i;
 
 export const normalizeChatMessage = (value) =>
 	typeof value === "string"
 		? value.replace(controlCharacterPattern, "").replace(/\s+/g, " ").trim()
 		: "";
+
+export const appendChatHistory = (history, message, answer) => [
+	...(Array.isArray(history) ? history : []),
+	{ role: "user", parts: [{ text: message }] },
+	{ role: "model", parts: [{ text: answer }] },
+].slice(-8);
+
+export const buildChatHistory = (exchanges) =>
+	(Array.isArray(exchanges) ? exchanges : []).reduce((history, exchange) => (
+		typeof exchange?.question === "string" && typeof exchange?.response === "string"
+			? appendChatHistory(history, exchange.question, exchange.response)
+			: history
+	), []);
 
 export function getGuardrailRefusal(message, { hasConversation = false, hasAttachments = false } = {}) {
 	if (injectionPatterns.some((pattern) => pattern.test(message))) return SECURITY_REFUSAL;
@@ -53,7 +70,8 @@ export function redactChatLogText(value) {
 		.replace(/\b(api\s*key|access\s*token|password|secret)\s*[:=]\s*\S+/gi, "$1=[REDACTED]");
 }
 
-export function getDirectPortfolioResponse(message, { visitorName, portfolioData }) {
+export function getDirectPortfolioResponse(message, { visitorName, portfolioData, hasAttachments = false }) {
+	if (hasAttachments) return null;
 	if (greetingPattern.test(message)) {
 		return `Hi ${visitorName}. I can help with Tanmoy's experience, skills, projects, certifications, and contact details.`;
 	}
@@ -86,6 +104,56 @@ export function getDirectPortfolioResponse(message, { visitorName, portfolioData
 	}
 	if (contactPattern.test(message)) {
 		return `You can reach Tanmoy at ${portfolioData.email}, connect on LinkedIn at ${portfolioData.linkedin}, or call ${portfolioData.phones[0]}.`;
+	}
+	return null;
+}
+
+export function getContextualPortfolioResponse(message, { history, portfolioData, hasAttachments = false }) {
+	const isContextualQuestion = [
+		followUpPattern,
+		roleProjectsFollowUpPattern,
+		roleSkillsFollowUpPattern,
+		projectSkillsFollowUpPattern,
+		leadershipProjectFollowUpPattern,
+	].some((pattern) => pattern.test(message));
+	if (hasAttachments || !isContextualQuestion || !Array.isArray(history)) return null;
+	const previousQuestion = [...history]
+		.reverse()
+		.find((entry) => entry?.role === "user" && typeof entry.parts?.[0]?.text === "string")
+		?.parts[0].text;
+	if (!previousQuestion) return null;
+	const current = portfolioData.experience.find((role) => role.current) || portfolioData.experience[0];
+	if (roleSkillsFollowUpPattern.test(message)) {
+		return `The role is supported by ${current.stack.join(", ")}. Tanmoy also brings architecture leadership, technical scoping, and end-to-end delivery experience.`;
+	}
+	if (roleProjectsFollowUpPattern.test(message)) {
+		const projects = portfolioData.projects.filter((project) => project.client === current.company);
+		return projects.map((project) => `${project.title}: ${project.description}`).join("\n");
+	}
+	if (leadershipProjectFollowUpPattern.test(message)) {
+		const leadershipProject = portfolioData.projects.find((project) => /team/i.test(project.metric)) || portfolioData.projects[0];
+		return `${leadershipProject.title} best shows leadership: ${leadershipProject.description} Tanmoy led ${leadershipProject.metric.toLowerCase()} and delivered ${leadershipProject.highlights.slice(0, 2).join(" and ").toLowerCase()}.`;
+	}
+
+	if (currentRolePattern.test(previousQuestion)) {
+		return `${current.summary} ${current.highlights.join(" ")} His core stack in this role is ${current.stack.join(", ")}.`;
+	}
+	if (aiProjectsPattern.test(previousQuestion) || /\bprojects?\b/i.test(previousQuestion)) {
+		const projects = portfolioData.projects.filter((project) =>
+			JSON.stringify(project).match(/\b(?:ai|genai|generative|llm|conversational)\b/i)
+		);
+		if (projectSkillsFollowUpPattern.test(message)) {
+			const skills = [...new Set(projects.flatMap((project) => project.stack))];
+			return `Those projects demonstrate ${skills.join(", ")}, alongside conversational AI, secure file intelligence, and real-time data workflows.`;
+		}
+		return projects
+			.map((project) => `${project.title}: ${project.description} Key evidence: ${project.highlights.slice(0, 2).join("; ")}.`)
+			.join("\n");
+	}
+	if (topSkillsPattern.test(previousQuestion) || cloudSkillsPattern.test(previousQuestion)) {
+		return portfolioData.skills
+			.map((group) => `${group.category}: ${group.items.slice(0, 4).map((skill) => skill.name).join(", ")}.`)
+			.join("\n");
 	}
 	return null;
 }

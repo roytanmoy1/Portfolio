@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
 	DndContext,
 	KeyboardSensor,
@@ -25,13 +25,21 @@ const orderItems = (currentIds, availableIds) => [
 	...availableIds.filter((itemId) => !currentIds.includes(itemId)),
 ];
 
-const readStoredOrder = (storageKey, availableIds) => {
+const readStoredOrder = (storedValue, availableIds) => {
 	try {
-		const value = JSON.parse(localStorage.getItem(storageKey));
+		const value = JSON.parse(storedValue);
 		return Array.isArray(value) ? orderItems(value, availableIds) : availableIds;
 	} catch {
 		return availableIds;
 	}
+};
+
+const subscribeToStoredOrder = (storageKey, onStoreChange) => {
+	const handleStorage = (event) => {
+		if (event.key === null || event.key === storageKey) onStoreChange();
+	};
+	window.addEventListener("storage", handleStorage);
+	return () => window.removeEventListener("storage", handleStorage);
 };
 
 const SortableItem = ({ id, label, children }) => {
@@ -69,26 +77,25 @@ const SortableItem = ({ id, label, children }) => {
 
 const SortableGrid = ({ items, className, storageKey, renderItem }) => {
 	const availableIds = items.map((item) => item.id);
-	const availableIdsKey = availableIds.join("\u001f");
-	const [orderedIds, setOrderedIds] = useState(availableIds);
+	const storedOrder = useSyncExternalStore(
+		(onStoreChange) => subscribeToStoredOrder(storageKey, onStoreChange),
+		() => localStorage.getItem(storageKey) || "",
+		() => ""
+	);
+	const [orderedIds, setOrderedIds] = useState(null);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
 	);
 
-	useEffect(() => {
-		const currentIds = availableIdsKey ? availableIdsKey.split("\u001f") : [];
-		setOrderedIds(readStoredOrder(storageKey, currentIds));
-	}, [availableIdsKey, storageKey]);
-
 	const itemsById = new Map(items.map((item) => [item.id, item]));
-	const displayIds = orderItems(orderedIds, availableIds);
+	const displayIds = orderItems(orderedIds ?? readStoredOrder(storedOrder, availableIds), availableIds);
 
 	const handleDragEnd = ({ active, over }) => {
 		if (!over || active.id === over.id) return;
 
 		setOrderedIds((currentIds) => {
-			const currentOrder = orderItems(currentIds, availableIds);
+			const currentOrder = orderItems(currentIds ?? displayIds, availableIds);
 			const oldIndex = currentOrder.indexOf(active.id);
 			const newIndex = currentOrder.indexOf(over.id);
 			const nextOrder = arrayMove(currentOrder, oldIndex, newIndex);

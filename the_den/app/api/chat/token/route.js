@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { issueChatToken, normalizeWebSocketUrl } from "../../../lib/chatToken";
+import { issueChatToken, normalizeWebSocketUrl } from "@/features/assistant/domain/chatToken";
 
 export const runtime = "nodejs";
 

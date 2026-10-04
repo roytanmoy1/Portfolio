@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	FaArrowUp,
+	FaEnvelope,
 	FaMicrophone,
 	FaPaperclip,
 	FaRobot,
@@ -10,15 +11,51 @@ import {
 	FaVolumeMute,
 	FaVolumeUp,
 } from "react-icons/fa";
-import { useAssistant } from "../AssistantContext";
+import { useAssistant } from "../context/AssistantContext";
+import { portfolioData } from "../../portfolio/data/portfolioData";
+import { CONTACT_LIMITS, getContactFieldValidationError, normalizeContactFields } from "../../contact/contactValidation";
 import styles from "./ChatPanel.module.css";
 
-const suggestions = [
+const starterSuggestions = [
 	"What is Tanmoy's current role?",
 	"Which projects show AI experience?",
 	"Summarize his cloud skills.",
-	"How can I contact Tanmoy?",
+	"Send an email to Tanmoy",
 ];
+const contactIntentPattern = /\b(?:send|write)\b.{0,50}\b(?:message|email|note)\b|\bemail\s+(?:tanmoy|him)\b|\bcontact\s+tanmoy\b/i;
+const contactPrompts = {
+	name: "What name should I include in the email?",
+	email: "What email address should Tanmoy reply to?",
+	message: "What would you like the email to say?",
+};
+
+const getSuggestedQuestions = (messages, isTyping) => {
+	const lastMessage = messages.at(-1);
+	if (!lastMessage) return starterSuggestions;
+	if (isTyping || lastMessage.role !== "assistant") return [];
+
+	const userQuestions = messages.filter((message) => message.role === "user");
+	const lastQuestion = userQuestions.at(-1);
+	if (!lastQuestion) return starterSuggestions;
+	const topicQuestion = /^tell me more\b/i.test(lastQuestion.text) && userQuestions.length > 1
+		? userQuestions.at(-2)
+		: lastQuestion;
+	let questions;
+	if (topicQuestion.attachments?.length) {
+		questions = ["Tell me more", "How does this relate to Tanmoy's experience?"];
+	} else if (/\b(?:role|job|deloitte|work)\b/i.test(topicQuestion.text)) {
+		questions = ["Which projects show his recent impact?", "What skills support this role?"];
+	} else if (/\bprojects?\b/i.test(topicQuestion.text)) {
+		questions = ["What skills do those projects demonstrate?", "Which project best shows leadership?"];
+	} else if (/\b(?:skills?|cloud|aws|azure|frontend|backend)\b/i.test(topicQuestion.text)) {
+		questions = ["Which projects use those skills?", "What is Tanmoy's current role?"];
+	} else if (/\b(?:contact|email|reach|call)\b/i.test(topicQuestion.text)) {
+		questions = ["Send a message to Tanmoy", "What is Tanmoy's current role?"];
+	} else {
+		questions = ["Tell me more", "Which projects show AI experience?"];
+	}
+	return questions.filter((question) => question.toLowerCase() !== lastQuestion.text.toLowerCase());
+};
 
 const createId = () =>
 	typeof crypto !== "undefined" && crypto.randomUUID
@@ -41,6 +78,8 @@ const formatFileSize = (bytes) => {
 	if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
 	return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
+
+const initialContactForm = { name: "", email: "", message: "" };
 
 const getChatCredentials = async () => {
 	const tokenResponse = await fetch("/api/chat/token", {
@@ -66,19 +105,127 @@ const ChatPanel = () => {
 	const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 	const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
+	const [uploadError, setUploadError] = useState("");
 	const [isListening, setIsListening] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 	const [isUserActive, setIsUserActive] = useState(true);
 	const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(false);
 	const [visitorName, setVisitorName] = useState("");
 	const [nameError, setNameError] = useState("");
+	const [contactFlowStep, setContactFlowStep] = useState(null);
+	const [contactForm, setContactForm] = useState(initialContactForm);
+	const [isContactSubmitting, setIsContactSubmitting] = useState(false);
 	const socketRef = useRef(null);
+	const pendingRequestRef = useRef(null);
 	const fileInputRef = useRef(null);
 	const recognitionRef = useRef(null);
 	const voiceRepliesRef = useRef(false);
 	const messagesEndRef = useRef(null);
 	const nameInputRef = useRef(null);
 	const inputRef = useRef(null);
+	const uploadDialogRef = useRef(null);
+	const uploadTriggerRef = useRef(null);
+
+	const closeUploadDialog = () => {
+		setIsUploadDialogOpen(false);
+		setPendingFiles([]);
+		setUploadError("");
+		window.requestAnimationFrame(() => uploadTriggerRef.current?.focus());
+	};
+
+	const startContactFlow = (request = "I'd like to send Tanmoy an email.") => {
+		setContactForm(initialContactForm);
+		setContactFlowStep("name");
+		setMessages((current) => [
+			...current,
+			{ id: createId(), role: "user", text: request },
+			{ id: createId(), role: "assistant", text: `Sure. ${contactPrompts.name}` },
+		]);
+		window.requestAnimationFrame(() => inputRef.current?.focus());
+	};
+
+	const submitContactFlow = async (fields, userMessage) => {
+		setContactFlowStep("sending");
+		setIsContactSubmitting(true);
+		setMessages((current) => [
+			...current,
+			{ id: createId(), role: "user", text: userMessage },
+			{ id: createId(), role: "assistant", text: "Sending your email..." },
+		]);
+
+		try {
+			const response = await fetch("/api/contact", {
+				method: "POST",
+				headers: { "Content-Type": "application/json", Accept: "application/json" },
+				body: JSON.stringify(fields),
+			});
+			const result = await response.json().catch(() => ({}));
+			if (!response.ok || result.delivery !== "smtp") {
+				throw new Error(result.error || "The email server could not confirm delivery.");
+			}
+			setMessages((current) => [...current, {
+				id: createId(),
+				role: "assistant",
+				text: "Your message was accepted by the email server for delivery. Tanmoy can reply to the address you provided.",
+			}]);
+		} catch (error) {
+			setMessages((current) => [...current, {
+				id: createId(),
+				role: "error",
+				text: `I couldn't send that email: ${error.message || "delivery failed"} You can email Tanmoy directly at ${portfolioData.email}.`,
+			}]);
+		} finally {
+			setContactFlowStep(null);
+			setContactForm(initialContactForm);
+			setIsContactSubmitting(false);
+			window.requestAnimationFrame(() => inputRef.current?.focus());
+		}
+	};
+
+	const continueContactFlow = (userMessage) => {
+		if (!contactFlowStep || contactFlowStep === "sending") return;
+		const value = contactFlowStep === "name"
+			? userMessage.replace(/\s+/g, " ").trim()
+			: contactFlowStep === "email"
+				? userMessage.trim().toLowerCase()
+				: userMessage.trim();
+
+		if (/^(?:cancel|stop|never mind)$/i.test(value)) {
+			setContactFlowStep(null);
+			setContactForm(initialContactForm);
+			setMessages((current) => [
+				...current,
+				{ id: createId(), role: "user", text: userMessage },
+				{ id: createId(), role: "assistant", text: "No problem. I haven't sent anything." },
+			]);
+			return;
+		}
+
+		const validationError = getContactFieldValidationError(contactFlowStep, value);
+		if (validationError) {
+			setMessages((current) => [
+				...current,
+				{ id: createId(), role: "user", text: userMessage },
+				{ id: createId(), role: "assistant", text: `${validationError} ${contactPrompts[contactFlowStep]}` },
+			]);
+			return;
+		}
+
+		const fields = normalizeContactFields({ ...contactForm, [contactFlowStep]: value });
+		if (contactFlowStep === "message") {
+			void submitContactFlow(fields, userMessage);
+			return;
+		}
+
+		const nextStep = contactFlowStep === "name" ? "email" : "message";
+		setContactForm(fields);
+		setContactFlowStep(nextStep);
+		setMessages((current) => [
+			...current,
+			{ id: createId(), role: "user", text: userMessage },
+			{ id: createId(), role: "assistant", text: contactPrompts[nextStep] },
+		]);
+	};
 
 	useEffect(() => {
 		voiceRepliesRef.current = voiceRepliesEnabled;
@@ -119,8 +266,7 @@ const ChatPanel = () => {
 	}, []);
 
 	useEffect(() => {
-		if (!isUserActive) {
-			setConnectionState("paused");
+		if (!isAssistantOpen || !isUserActive) {
 			return undefined;
 		}
 
@@ -128,6 +274,13 @@ const ChatPanel = () => {
 		let socket;
 		let reconnectTimer;
 		let attempts = 0;
+		const restorePendingRequest = () => {
+			const pendingRequest = pendingRequestRef.current;
+			if (!pendingRequest) return;
+			setInput(pendingRequest.message);
+			setAttachments(pendingRequest.attachments);
+			pendingRequestRef.current = null;
+		};
 
 		const scheduleReconnect = () => {
 			if (disposed) return;
@@ -146,6 +299,7 @@ const ChatPanel = () => {
 
 			try {
 				const tokenPayload = await getChatCredentials();
+				if (disposed) return;
 
 				const websocketUrl = new URL(tokenPayload.websocketUrl);
 				websocketUrl.pathname = `${websocketUrl.pathname.replace(/\/$/, "")}/ws`;
@@ -164,6 +318,8 @@ const ChatPanel = () => {
 					if (payload.type === "ping") return;
 					if (payload.type === "ready") {
 						attempts = 0;
+						restorePendingRequest();
+						setIsTyping(false);
 						setConnectionState("ready");
 						return;
 					}
@@ -172,6 +328,8 @@ const ChatPanel = () => {
 						return;
 					}
 					if (payload.type === "assistant" && typeof payload.message === "string") {
+						pendingRequestRef.current = null;
+						setAttachments([]);
 						setIsTyping(false);
 						setMessages((current) => [
 							...current,
@@ -186,6 +344,7 @@ const ChatPanel = () => {
 						return;
 					}
 					if (payload.type === "error" && typeof payload.message === "string") {
+						restorePendingRequest();
 						setIsTyping(false);
 						setMessages((current) => [
 							...current,
@@ -195,6 +354,8 @@ const ChatPanel = () => {
 				});
 
 				socket.addEventListener("close", () => {
+					if (disposed) return;
+					restorePendingRequest();
 					if (socketRef.current === socket) socketRef.current = null;
 					setIsTyping(false);
 					setConnectionState("offline");
@@ -214,24 +375,51 @@ const ChatPanel = () => {
 			if (socketRef.current === socket) socketRef.current = null;
 			socket?.close(1000, "Connection paused");
 		};
-	}, [isUserActive]);
+	}, [isAssistantOpen, isUserActive]);
 
 	useEffect(() => {
 		if (!isAssistantOpen) return undefined;
 		const handleKeyDown = (event) => {
-			if (event.key !== "Escape") return;
-			if (isUploadDialogOpen) {
+			if (event.key === "Escape" && contactFlowStep && contactFlowStep !== "sending") {
+				setContactFlowStep(null);
+				setContactForm(initialContactForm);
+				setMessages((current) => [
+					...current,
+					{ id: createId(), role: "assistant", text: "No problem. I haven't sent anything." },
+				]);
+				return;
+			}
+			if (event.key === "Escape" && isUploadDialogOpen) {
 				setIsUploadDialogOpen(false);
 				setPendingFiles([]);
-			} else {
+				setUploadError("");
+				window.requestAnimationFrame(() => uploadTriggerRef.current?.focus());
+				return;
+			}
+			if (event.key === "Escape") {
 				closeAssistant();
+				return;
+			}
+			if (event.key === "Tab" && isUploadDialogOpen) {
+				const focusable = [...uploadDialogRef.current.querySelectorAll("button:not(:disabled), [tabindex]:not([tabindex='-1'])")];
+				const first = focusable[0];
+				const last = focusable.at(-1);
+				if (!first || !last) return;
+				if (event.shiftKey && (document.activeElement === first || !uploadDialogRef.current.contains(document.activeElement))) {
+					event.preventDefault();
+					last.focus();
+				} else if (!event.shiftKey && (document.activeElement === last || !uploadDialogRef.current.contains(document.activeElement))) {
+					event.preventDefault();
+					first.focus();
+				}
 			}
 		};
 		document.addEventListener("keydown", handleKeyDown);
-		if (visitorName) inputRef.current?.focus();
+		if (isUploadDialogOpen) uploadDialogRef.current?.querySelector("button:not(:disabled)")?.focus();
+		else if (visitorName) inputRef.current?.focus();
 		else nameInputRef.current?.focus();
 		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [closeAssistant, isAssistantOpen, isUploadDialogOpen, visitorName]);
+	}, [closeAssistant, contactFlowStep, isAssistantOpen, isUploadDialogOpen, visitorName]);
 
 	useEffect(() => {
 		if (isAssistantOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -241,8 +429,6 @@ const ChatPanel = () => {
 		if (isAssistantOpen) return;
 		recognitionRef.current?.stop();
 		window.speechSynthesis?.cancel();
-		setIsUploadDialogOpen(false);
-		setPendingFiles([]);
 	}, [isAssistantOpen]);
 
 	const addClientError = (message) => {
@@ -264,17 +450,18 @@ const ChatPanel = () => {
 		const selectedFiles = Array.from(files || []);
 		if (selectedFiles.length === 0) return;
 		if (attachments.length + pendingFiles.length + selectedFiles.length > MAX_FILES) {
-			addClientError("A chat session can contain at most five files.");
+			setUploadError("A chat session can contain at most five files.");
 			return;
 		}
 		if (selectedFiles.some((file) => !/\.(?:pdf|txt|xlsx)$/i.test(file.name))) {
-			addClientError("Only PDF, TXT, and XLSX files are supported.");
+			setUploadError("Only PDF, TXT, and XLSX files are supported.");
 			return;
 		}
 		if (selectedFiles.some((file) => file.size < 1 || file.size > MAX_FILE_BYTES)) {
-			addClientError("Each file must be no larger than 2 MiB.");
+			setUploadError("Each file must be no larger than 2 MiB.");
 			return;
 		}
+		setUploadError("");
 		setPendingFiles((current) => {
 			const known = new Set(current.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
 			return [...current, ...selectedFiles.filter((file) => !known.has(`${file.name}:${file.size}:${file.lastModified}`))];
@@ -290,6 +477,7 @@ const ChatPanel = () => {
 		if (pendingFiles.length === 0) return;
 
 		setIsUploading(true);
+		setUploadError("");
 		try {
 			const credentials = await getChatCredentials();
 			const uploadUrl = new URL(credentials.websocketUrl);
@@ -311,7 +499,7 @@ const ChatPanel = () => {
 			setPendingFiles([]);
 			setIsUploadDialogOpen(false);
 		} catch (error) {
-			addClientError(error.message || "Files could not be stored.");
+			setUploadError(error.message || "Files could not be stored.");
 		} finally {
 			setIsUploading(false);
 		}
@@ -359,22 +547,43 @@ const ChatPanel = () => {
 		}
 	};
 
-	const sendMessage = (value) => {
-		const message = value.trim() || (attachments.length ? "Please summarize the attached files." : "");
-		if (!message || message.length > 500 || connectionState !== "ready") return;
-		if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+	const activeConnectionState = isUserActive ? connectionState : "paused";
 
-		setMessages((current) => [...current, { id: createId(), role: "user", text: message }]);
+	const sendMessage = (value) => {
+		const message = value.trim() || (!contactFlowStep && attachments.length ? "Please summarize the attached files." : "");
+		const maxMessageLength = contactFlowStep === "message" ? CONTACT_LIMITS.messageMax : 500;
+		if (!message || message.length > maxMessageLength) return;
+		if (contactFlowStep && contactFlowStep !== "sending") {
+			continueContactFlow(message);
+			setInput("");
+			return;
+		}
+		if (contactIntentPattern.test(message)) {
+			setInput("");
+			startContactFlow(message);
+			return;
+		}
+		if (activeConnectionState !== "ready") return;
+		if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+		const sentAttachments = attachments.map(({ id, name, size, type }) => ({ id, name, size, type }));
+
+		setMessages((current) => [
+			...current,
+			{ id: createId(), role: "user", text: message, attachments: sentAttachments },
+		]);
+		pendingRequestRef.current = { message, attachments: sentAttachments };
 		setInput("");
 		setIsTyping(true);
 		socketRef.current.send(JSON.stringify({
 			type: "chat",
 			message,
 			name: visitorName,
-			fileIds: attachments.map((file) => file.id),
+			fileIds: sentAttachments.map((file) => file.id),
 		}));
 		setAttachments([]);
 	};
+
+	const suggestedQuestions = getSuggestedQuestions(messages, isTyping);
 
 	if (!isAssistantOpen) return null;
 
@@ -395,10 +604,14 @@ const ChatPanel = () => {
 
 				<div className={styles.status} role="status" aria-live="polite">
 					<span className={styles.connectionStatus}>
-						<span className={`${styles.statusDot} ${connectionState === "ready" ? styles.online : ""}`} aria-hidden="true" />
-						{connectionLabels[connectionState]}
+						<span className={`${styles.statusDot} ${activeConnectionState === "ready" ? styles.online : ""}`} aria-hidden="true" />
+						{connectionLabels[activeConnectionState]}
 					</span>
-					{visitorName && (
+					{visitorName && <div className={styles.statusActions}>
+						<button type="button" className={styles.contactButton} onClick={() => startContactFlow()} aria-label="Email Tanmoy" disabled={Boolean(contactFlowStep) || isContactSubmitting}>
+							<FaEnvelope aria-hidden="true" />
+							<span>Email Tanmoy</span>
+						</button>
 						<button
 							type="button"
 							className={`${styles.voiceToggle} ${voiceRepliesEnabled ? styles.activeControl : ""}`}
@@ -408,7 +621,7 @@ const ChatPanel = () => {
 						>
 							{voiceRepliesEnabled ? <FaVolumeUp aria-hidden="true" /> : <FaVolumeMute aria-hidden="true" />}
 						</button>
-					)}
+					</div>}
 				</div>
 
 				<div className={styles.messages} aria-live="polite">
@@ -439,11 +652,25 @@ const ChatPanel = () => {
 								<div className={styles.welcome}>
 									<strong>Hi {visitorName}. Start with a portfolio question.</strong>
 									<p>I can discuss public experience, skills, projects, education, and contact details.</p>
+									<button type="button" className={styles.contactCta} onClick={() => startContactFlow()}>
+										<FaEnvelope aria-hidden="true" /> Email Tanmoy
+									</button>
 								</div>
 							)}
 							{messages.map((message) => (
 								<div className={`${styles.message} ${styles[message.role]}`} key={message.id}>
-									{message.text}
+									<span className={styles.messageText}>{message.text}</span>
+									{message.attachments?.length > 0 && (
+										<ul className={styles.sentAttachments} aria-label="Files sent with this message">
+											{message.attachments.map((file) => (
+												<li className={styles.sentAttachment} key={file.id}>
+													<FaPaperclip aria-hidden="true" />
+													<span title={file.name}>{file.name}</span>
+													<small>{formatFileSize(file.size)}</small>
+												</li>
+											))}
+										</ul>
+									)}
 								</div>
 							))}
 							{isTyping && (
@@ -456,14 +683,14 @@ const ChatPanel = () => {
 					)}
 				</div>
 
-				{visitorName && messages.every((message) => message.role !== "user") && (
-					<div className={styles.suggestions} aria-label="Suggested questions">
-						{suggestions.map((suggestion) => (
+				{visitorName && !contactFlowStep && suggestedQuestions.length > 0 && (
+					<div className={styles.suggestions} aria-label={messages.length ? "Suggested follow-up questions" : "Suggested questions"}>
+						{suggestedQuestions.map((suggestion) => (
 							<button
 								type="button"
 								key={suggestion}
 								onClick={() => sendMessage(suggestion)}
-								disabled={connectionState !== "ready"}
+								disabled={activeConnectionState !== "ready"}
 							>
 								{suggestion}
 							</button>
@@ -473,7 +700,7 @@ const ChatPanel = () => {
 
 				{visitorName && isUploadDialogOpen && (
 					<div className={styles.uploadOverlay}>
-						<div className={styles.uploadDialog} role="dialog" aria-modal="true" aria-labelledby="upload-title">
+						<div ref={uploadDialogRef} className={styles.uploadDialog} role="dialog" aria-modal="true" aria-labelledby="upload-title">
 							<div className={styles.uploadHeader}>
 								<div>
 									<h3 id="upload-title">Attach files</h3>
@@ -481,10 +708,7 @@ const ChatPanel = () => {
 								</div>
 								<button
 									type="button"
-									onClick={() => {
-										setIsUploadDialogOpen(false);
-										setPendingFiles([]);
-									}}
+									onClick={closeUploadDialog}
 									aria-label="Close file dialog"
 								>
 									<FaTimes aria-hidden="true" />
@@ -511,6 +735,7 @@ const ChatPanel = () => {
 								<strong>Choose files</strong>
 								<span>or drop them here</span>
 							</button>
+							{uploadError && <p className={styles.uploadError} role="alert">{uploadError}</p>}
 
 							<div className={styles.fileReview}>
 								{attachments.length > 0 && (
@@ -544,10 +769,7 @@ const ChatPanel = () => {
 							<div className={styles.uploadActions}>
 								<button
 									type="button"
-									onClick={() => {
-										setIsUploadDialogOpen(false);
-										setPendingFiles([]);
-									}}
+									onClick={closeUploadDialog}
 								>
 									Cancel
 								</button>
@@ -594,25 +816,44 @@ const ChatPanel = () => {
 					{isUploading && <p className={styles.uploadStatus}>Encrypting and storing files...</p>}
 					<div className={styles.composerRow}>
 						<button
+							ref={uploadTriggerRef}
 							type="button"
 							className={styles.toolButton}
-							onClick={() => setIsUploadDialogOpen(true)}
-							disabled={isUploading}
+							onClick={() => {
+								setUploadError("");
+								setIsUploadDialogOpen(true);
+							}}
+							disabled={isUploading || isTyping}
 							aria-label="Attach files"
 							title="Attach up to 5 PDF, TXT, or XLSX files, 2 MiB each"
 						>
 							<FaPaperclip aria-hidden="true" />
 						</button>
-						<label className={styles.srOnly} htmlFor="assistant-message">Ask a portfolio question</label>
-						<input
-							id="assistant-message"
-							ref={inputRef}
-							value={input}
-							onChange={(event) => setInput(event.target.value)}
-							placeholder={connectionState === "ready" ? "Ask about experience or projects" : "Connecting to assistant"}
-							maxLength={500}
-							autoComplete="off"
-						/>
+						<label className={styles.srOnly} htmlFor="assistant-message">{contactFlowStep ? "Your email details" : "Ask a portfolio question"}</label>
+						{contactFlowStep === "message" ? (
+							<textarea
+								id="assistant-message"
+								ref={inputRef}
+								value={input}
+								onChange={(event) => setInput(event.target.value)}
+								placeholder="Type the email message"
+								disabled={isTyping || isContactSubmitting}
+								maxLength={CONTACT_LIMITS.messageMax}
+								rows={2}
+								autoComplete="off"
+							/>
+						) : (
+							<input
+								id="assistant-message"
+								ref={inputRef}
+								value={input}
+								onChange={(event) => setInput(event.target.value)}
+								placeholder={contactFlowStep === "name" ? "Type the contact name" : contactFlowStep === "email" ? "Type the reply email" : contactFlowStep === "sending" ? "Sending email..." : activeConnectionState === "ready" ? "Ask about experience or projects" : "Connecting to assistant"}
+								disabled={isTyping || isContactSubmitting}
+								maxLength={contactFlowStep === "name" ? CONTACT_LIMITS.nameMax : contactFlowStep === "email" ? CONTACT_LIMITS.emailMax : 500}
+								autoComplete="off"
+							/>
+						)}
 						<button
 							type="button"
 							className={`${styles.toolButton} ${isListening ? styles.activeControl : ""}`}
@@ -625,7 +866,7 @@ const ChatPanel = () => {
 						<button
 							type="submit"
 							className={styles.sendButton}
-							disabled={(!input.trim() && attachments.length === 0) || connectionState !== "ready" || isTyping || isUploading}
+							disabled={(!input.trim() && attachments.length === 0) || (!contactFlowStep && activeConnectionState !== "ready") || isTyping || isUploading || isContactSubmitting}
 							aria-label="Send message"
 						>
 							<FaArrowUp aria-hidden="true" />

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { strToU8, zipSync } from "fflate";
 import { jwtVerify } from "jose";
-import { portfolioData } from "../app/data/portfolioData.js";
+import { portfolioData } from "../features/portfolio/data/portfolioData.js";
 import {
 	MAX_CHAT_FILE_BYTES,
 	decryptChatFile,
@@ -10,23 +10,26 @@ import {
 	getFileEncryptionKey,
 	validateChatFileContent,
 	validateChatFileMetadata,
-} from "../app/lib/chatFiles.js";
+} from "../features/assistant/domain/chatFiles.js";
 import {
 	PORTFOLIO_ONLY_REFUSAL,
 	SECURITY_REFUSAL,
+	appendChatHistory,
+	buildChatHistory,
 	buildPublicPortfolioContext,
+	getContextualPortfolioResponse,
 	getDirectPortfolioResponse,
 	getGuardrailRefusal,
 	redactChatLogText,
 	sanitizeAssistantOutput,
-} from "../app/lib/chatSecurity.js";
+} from "../features/assistant/domain/chatSecurity.js";
 import {
 	CHAT_TOKEN_AUDIENCE,
 	CHAT_TOKEN_ISSUER,
 	getChatTokenKey,
 	issueChatToken,
 	normalizeWebSocketUrl,
-} from "../app/lib/chatToken.js";
+} from "../features/assistant/domain/chatToken.js";
 
 assert.equal(getGuardrailRefusal("What projects has Tanmoy built?"), null);
 assert.equal(getGuardrailRefusal("What are his top 4 skillsets?"), null);
@@ -44,12 +47,41 @@ assert.equal(redactChatLogText("api key=AIzaExampleValue123456789"), "api key=[R
 
 const greeting = getDirectPortfolioResponse("hi", { visitorName: "Asha", portfolioData });
 assert.match(greeting, /^Hi Asha\./);
+assert.equal(getDirectPortfolioResponse("hi", { visitorName: "Asha", portfolioData, hasAttachments: true }), null);
 const topSkills = getDirectPortfolioResponse("What are his top 4 skillsets?", { visitorName: "Asha", portfolioData });
 assert.match(topSkills, /Frontend/);
 assert.match(topSkills, /Backend & APIs/);
 assert.match(topSkills, /Cloud & DevOps/);
 assert.match(topSkills, /Data, AI & Quality/);
 assert.match(getDirectPortfolioResponse("Which projects show AI experience?", { visitorName: "Asha", portfolioData }), /EPIC Hub/);
+
+let conversationHistory = appendChatHistory([], "What is Tanmoy's current role?", "Tanmoy is a consultant.");
+assert.equal(getGuardrailRefusal("Tell me more", { hasConversation: conversationHistory.length > 0 }), null);
+const roleFollowUp = getContextualPortfolioResponse("Tell me more", { history: conversationHistory, portfolioData });
+assert.match(roleFollowUp, /3-engineer team/);
+assert.match(roleFollowUp, /React, Redux Toolkit, Node\.js/);
+assert.match(getContextualPortfolioResponse("What skills support this role?", { history: conversationHistory, portfolioData }), /React, Redux Toolkit, Node\.js/);
+assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /EPIC Hub/);
+assert.equal(getContextualPortfolioResponse("Tell me more", { history: conversationHistory, portfolioData, hasAttachments: true }), null);
+conversationHistory = appendChatHistory(conversationHistory, "What skills support this role?", "React and Node.js support the role.");
+assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Supply Explorer/);
+const projectHistory = appendChatHistory([], "Which projects show AI experience?", "EPIC Hub and SenseAI.");
+assert.match(getContextualPortfolioResponse("What skills do those projects demonstrate?", { history: projectHistory, portfolioData }), /WebSockets/);
+assert.match(getContextualPortfolioResponse("Which project best shows leadership?", { history: projectHistory, portfolioData }), /EPIC Hub/);
+for (let index = 0; index < 5; index += 1) {
+	conversationHistory = appendChatHistory(conversationHistory, `Question ${index}`, `Answer ${index}`);
+}
+assert.equal(conversationHistory.length, 8);
+assert.equal(conversationHistory.at(-1).parts[0].text, "Answer 4");
+assert.deepEqual(buildChatHistory([
+	{ question: "First question", response: "First answer" },
+	{ question: "Second question", response: "Second answer" },
+]), [
+	{ role: "user", parts: [{ text: "First question" }] },
+	{ role: "model", parts: [{ text: "First answer" }] },
+	{ role: "user", parts: [{ text: "Second question" }] },
+	{ role: "model", parts: [{ text: "Second answer" }] },
+]);
 
 const context = buildPublicPortfolioContext({ ...portfolioData, privateSecret: "must-not-appear" });
 assert.equal(JSON.stringify(context).includes("must-not-appear"), false);

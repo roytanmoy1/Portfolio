@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
-import { sendContactEmail } from "../../lib/contactMailer";
-import { getDatabase } from "../../lib/neon";
+import { sendContactEmail } from "@/features/contact/contactMailer";
+import { getContactValidationError, normalizeContactFields } from "@/features/contact/contactValidation";
+import { getDatabase } from "@/server/neon";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 32 * 1024;
-const MAX_NAME_LENGTH = 80;
-const MAX_EMAIL_LENGTH = 254;
-const MAX_MESSAGE_LENGTH = 4000;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const controlCharacterPattern = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const requestLog = new Map();
 
 const response = (body, status) =>
@@ -19,8 +15,6 @@ const response = (body, status) =>
 		status,
 		headers: { "Cache-Control": "no-store" },
 	});
-
-const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
 
 export async function POST(request) {
 	const address = (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown")
@@ -69,27 +63,16 @@ export async function POST(request) {
 		return response({ error: "Invalid form payload." }, 400);
 	}
 
-	const name = cleanText(payload.name).replace(/\s+/g, " ");
-	const email = cleanText(payload.email).toLowerCase();
-	const message = cleanText(payload.message);
-	const honeypot = cleanText(payload.company);
+	const fields = normalizeContactFields(payload);
+	const { name, email, message, company } = fields;
 
-	if (honeypot) {
+	if (company) {
 		return response({ ok: true }, 200);
 	}
 
-	if (
-		name.length < 2 ||
-		name.length > MAX_NAME_LENGTH ||
-		email.length > MAX_EMAIL_LENGTH ||
-		!emailPattern.test(email) ||
-		message.length < 10 ||
-		message.length > MAX_MESSAGE_LENGTH ||
-		controlCharacterPattern.test(name) ||
-		controlCharacterPattern.test(email) ||
-		controlCharacterPattern.test(message)
-	) {
-		return response({ error: "Please provide a valid name, email, and message." }, 422);
+	const validationError = getContactValidationError(fields);
+	if (validationError) {
+		return response({ error: validationError }, 422);
 	}
 
 	const database = getDatabase();
@@ -108,7 +91,7 @@ export async function POST(request) {
 		const delivery = await sendContactEmail({ name, email, message });
 		if (!delivery.configured) return response({ error: "Email delivery is not configured." }, 503);
 		if (!delivery.accepted) return response({ error: "Email delivery failed." }, 502);
-		return response({ ok: true }, 200);
+		return response({ ok: true, delivery: "smtp" }, 200);
 	} catch (error) {
 		console.error("Contact email delivery failed.", {
 			code: typeof error?.code === "string" ? error.code : "UNKNOWN",
