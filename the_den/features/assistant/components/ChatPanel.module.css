@@ -36,7 +36,8 @@
 }
 
 .botIcon,
-.closeButton {
+.closeButton,
+.newChatButton {
 	display: grid;
 	place-items: center;
 	width: 2.3rem;
@@ -65,8 +66,16 @@
 	transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
+.newChatButton {
+	flex: 0 0 auto;
+	cursor: pointer;
+	transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
 .closeButton:hover,
-.closeButton:focus-visible {
+.closeButton:focus-visible,
+.newChatButton:hover,
+.newChatButton:focus-visible {
 	transform: rotate(5deg);
 	border-color: var(--accent-border);
 	color: var(--text-primary);
@@ -110,7 +119,6 @@
 	box-shadow: 0 0 0 0.2rem var(--success-glow);
 }
 
-.voiceToggle,
 .toolButton {
 	display: grid;
 	place-items: center;
@@ -123,12 +131,6 @@
 	color: var(--text-muted);
 	cursor: pointer;
 	transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
-}
-
-.voiceToggle {
-	flex: 0 0 auto;
-	width: 1.85rem;
-	height: 1.85rem;
 }
 
 .contactButton {
@@ -154,8 +156,6 @@
 	color: var(--accent-color);
 }
 
-.voiceToggle:hover,
-.voiceToggle:focus-visible,
 .toolButton:hover,
 .toolButton:focus-visible,
 .activeControl {
@@ -339,8 +339,32 @@
 
 .composerRow {
 	display: grid;
-	grid-template-columns: 2.1rem minmax(0, 1fr) 2.1rem 2.5rem;
+	align-items: center;
+	grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem 2.5rem;
 	gap: 0.35rem;
+}
+
+.composerRow .toolButton {
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 0.75rem;
+}
+
+.messageComposerRow {
+	align-items: end;
+}
+
+.messageComposerRow textarea {
+	height: 5rem;
+	min-height: 5rem;
+	padding: 0.55rem 0.65rem;
+	line-height: 1.45;
+	resize: vertical;
+}
+
+.messageComposerRow .toolButton,
+.messageComposerRow .sendButton {
+	align-self: end;
 }
 
 .composerRow input,
@@ -354,12 +378,6 @@
 	background: var(--input-bg);
 	color: var(--text-primary);
 	font-size: 0.72rem;
-}
-
-.composerRow textarea {
-	padding-block: 0.35rem;
-	line-height: 1.2;
-	resize: none;
 }
 
 .composerRow input:focus,
@@ -549,10 +567,35 @@
 }
 
 .uploadError {
+	display: grid;
+	gap: 0.4rem;
 	margin: 0 0.65rem 0.65rem;
 	color: var(--error-color);
 	font-size: 0.62rem;
 	line-height: 1.45;
+}
+
+.uploadError p {
+	margin: 0;
+}
+
+.newSessionButton {
+	justify-self: start;
+	min-height: 2rem;
+	padding: 0 0.6rem;
+	border: 1px solid var(--accent-border);
+	border-radius: 0.55rem;
+	background: var(--accent-transparent);
+	color: var(--text-primary);
+	cursor: pointer;
+	font-size: 0.62rem;
+	font-weight: 800;
+}
+
+.newSessionButton:hover,
+.newSessionButton:focus-visible {
+	background: var(--accent-color);
+	color: var(--on-accent);
 }
 
 .fileReview h4 {

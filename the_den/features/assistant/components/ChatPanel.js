@@ -6,10 +6,9 @@ import {
 	FaEnvelope,
 	FaMicrophone,
 	FaPaperclip,
+	FaPlus,
 	FaRobot,
 	FaTimes,
-	FaVolumeMute,
-	FaVolumeUp,
 } from "react-icons/fa";
 import { useAssistant } from "../context/AssistantContext";
 import { portfolioData } from "../../portfolio/data/portfolioData";
@@ -70,8 +69,19 @@ const connectionLabels = {
 	unavailable: "Unavailable",
 	paused: "Paused while inactive",
 };
+const speechErrorMessages = {
+	"not-allowed": "Microphone access is blocked. Allow access for this site in your browser settings, then try again.",
+	"service-not-allowed": "Speech recognition is blocked by the browser. Check its microphone permissions and try again.",
+	"audio-capture": "No microphone was found. Connect or select a microphone, then try again.",
+	"NotAllowedError": "Microphone access is blocked. Allow access for this site in your browser settings, then try again.",
+	"NotFoundError": "No microphone was found. Connect or select a microphone, then try again.",
+	"network": "Your browser's speech service could not connect. Type your message or try the microphone again when online.",
+	"no-speech": "No speech was detected. Tap the microphone and try again.",
+};
 const MAX_RECONNECT_ATTEMPTS = 4;
 const INACTIVITY_MS = 2 * 60 * 1000;
+const MAX_VOICE_RECORDING_MS = 15_000;
+const MAX_VOICE_RECORDING_BYTES = 2 * 1024 * 1024;
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const formatFileSize = (bytes) => {
@@ -100,17 +110,19 @@ const ChatPanel = () => {
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("idle");
+	const [chatSessionVersion, setChatSessionVersion] = useState(0);
 	const [attachments, setAttachments] = useState([]);
 	const [pendingFiles, setPendingFiles] = useState([]);
 	const [draftName, setDraftName] = useState("");
 	const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 	const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 	const [isUploading, setIsUploading] = useState(false);
+	const [isStartingNewChat, setIsStartingNewChat] = useState(false);
 	const [uploadError, setUploadError] = useState("");
 	const [isListening, setIsListening] = useState(false);
+	const [isTranscribingVoice, setIsTranscribingVoice] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
 	const [isUserActive, setIsUserActive] = useState(true);
-	const [voiceRepliesEnabled, setVoiceRepliesEnabled] = useState(false);
 	const [visitorName, setVisitorName] = useState("");
 	const [nameError, setNameError] = useState("");
 	const [contactFlowStep, setContactFlowStep] = useState(null);
@@ -120,12 +132,19 @@ const ChatPanel = () => {
 	const pendingRequestRef = useRef(null);
 	const fileInputRef = useRef(null);
 	const recognitionRef = useRef(null);
-	const voiceRepliesRef = useRef(false);
+	const mediaRecorderRef = useRef(null);
+	const mediaStreamRef = useRef(null);
+	const voiceChunksRef = useRef([]);
+	const voiceTimeoutRef = useRef(null);
+	const voiceStartPendingRef = useRef(false);
+	const discardVoiceRecordingRef = useRef(false);
+	const transcriptionAbortRef = useRef(null);
 	const messagesEndRef = useRef(null);
 	const nameInputRef = useRef(null);
 	const inputRef = useRef(null);
 	const uploadDialogRef = useRef(null);
 	const uploadTriggerRef = useRef(null);
+
 
 	const closeUploadDialog = () => {
 		setIsUploadDialogOpen(false);
@@ -134,13 +153,64 @@ const ChatPanel = () => {
 		window.requestAnimationFrame(() => uploadTriggerRef.current?.focus());
 	};
 
+	const startNewChat = async ({ preservePendingFiles = false } = {}) => {
+		if (isStartingNewChat || isUploading || isContactSubmitting) return;
+		setIsStartingNewChat(true);
+		setUploadError("");
+
+		try {
+			const response = await fetch("/api/chat/token", {
+				method: "POST",
+				headers: { Accept: "application/json", "X-Portfolio-New-Chat": "true" },
+				cache: "no-store",
+			});
+			const payload = await response.json().catch(() => ({}));
+			if (!response.ok || !payload.token || !payload.websocketUrl) {
+				throw new Error(payload.error || "A fresh chat session could not be started.");
+			}
+
+			recognitionRef.current?.stop();
+			recognitionRef.current = null;
+			discardVoiceRecordingRef.current = true;
+			window.clearTimeout(voiceTimeoutRef.current);
+			if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+			mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+			mediaStreamRef.current = null;
+			voiceStartPendingRef.current = false;
+			transcriptionAbortRef.current?.abort();
+			pendingRequestRef.current = null;
+			setIsListening(false);
+			setIsTranscribingVoice(false);
+			setMessages([]);
+			setInput("");
+			setAttachments([]);
+			if (!preservePendingFiles) setPendingFiles([]);
+			setContactFlowStep(null);
+			setContactForm(initialContactForm);
+			setIsTyping(false);
+			setConnectionState("connecting");
+			setIsUploadDialogOpen(preservePendingFiles);
+			setChatSessionVersion((current) => current + 1);
+			if (!preservePendingFiles) window.requestAnimationFrame(() => inputRef.current?.focus());
+		} catch (error) {
+			setMessages((current) => [...current, {
+				id: createId(),
+				role: "error",
+				text: error.message || "A fresh chat session could not be started.",
+			}]);
+		} finally {
+			setIsStartingNewChat(false);
+		}
+	};
+
 	const startContactFlow = (request = "I'd like to send Tanmoy an email.") => {
-		setContactForm(initialContactForm);
-		setContactFlowStep("name");
+		const nextStep = visitorName ? "email" : "name";
+		setContactForm({ ...initialContactForm, name: visitorName });
+		setContactFlowStep(nextStep);
 		setMessages((current) => [
 			...current,
 			{ id: createId(), role: "user", text: request },
-			{ id: createId(), role: "assistant", text: `Sure. ${contactPrompts.name}` },
+			{ id: createId(), role: "assistant", text: `Sure. ${contactPrompts[nextStep]}` },
 		]);
 		window.requestAnimationFrame(() => inputRef.current?.focus());
 	};
@@ -227,11 +297,6 @@ const ChatPanel = () => {
 			{ id: createId(), role: "assistant", text: contactPrompts[nextStep] },
 		]);
 	};
-
-	useEffect(() => {
-		voiceRepliesRef.current = voiceRepliesEnabled;
-		if (!voiceRepliesEnabled) window.speechSynthesis?.cancel();
-	}, [voiceRepliesEnabled]);
 
 	useEffect(() => {
 		let inactivityTimer;
@@ -336,12 +401,6 @@ const ChatPanel = () => {
 							...current,
 							{ id: payload.id || createId(), role: "assistant", text: payload.message },
 						]);
-						if (voiceRepliesRef.current && "speechSynthesis" in window) {
-							window.speechSynthesis.cancel();
-							const utterance = new SpeechSynthesisUtterance(payload.message);
-							utterance.lang = "en-IN";
-							window.speechSynthesis.speak(utterance);
-						}
 						return;
 					}
 					if (payload.type === "error" && typeof payload.message === "string") {
@@ -376,7 +435,7 @@ const ChatPanel = () => {
 			if (socketRef.current === socket) socketRef.current = null;
 			socket?.close(1000, "Connection paused");
 		};
-	}, [isAssistantOpen, isUserActive, visitorName]);
+	}, [chatSessionVersion, isAssistantOpen, isUserActive, visitorName]);
 
 	useEffect(() => {
 		if (!isAssistantOpen) return undefined;
@@ -429,7 +488,15 @@ const ChatPanel = () => {
 	useEffect(() => {
 		if (isAssistantOpen) return;
 		recognitionRef.current?.stop();
-		window.speechSynthesis?.cancel();
+		discardVoiceRecordingRef.current = true;
+		window.clearTimeout(voiceTimeoutRef.current);
+		if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+		mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+		mediaStreamRef.current = null;
+		voiceStartPendingRef.current = false;
+		transcriptionAbortRef.current?.abort();
+		setIsListening(false);
+		setIsTranscribingVoice(false);
 	}, [isAssistantOpen]);
 
 	const addClientError = (message) => {
@@ -506,45 +573,167 @@ const ChatPanel = () => {
 		}
 	};
 
-	const toggleListening = () => {
-		if (recognitionRef.current) {
-			recognitionRef.current.stop();
+	const transcribeVoiceRecording = async (audio) => {
+		if (!audio.size || audio.size > MAX_VOICE_RECORDING_BYTES) {
+			addClientError(audio.size ? "Voice recordings must be under 2 MiB." : "No voice audio was captured. Try again.");
 			return;
 		}
 
+		const controller = new AbortController();
+		transcriptionAbortRef.current = controller;
+		setIsTranscribingVoice(true);
+		try {
+			const credentials = await getChatCredentials();
+			const transcriptionUrl = new URL(credentials.websocketUrl);
+			transcriptionUrl.protocol = transcriptionUrl.protocol === "wss:" ? "https:" : "http:";
+			transcriptionUrl.pathname = `${transcriptionUrl.pathname.replace(/\/$/, "")}/transcribe`;
+			transcriptionUrl.search = "";
+			const response = await fetch(transcriptionUrl, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${credentials.token}`,
+					"Content-Type": audio.type.split(";")[0] || "audio/webm",
+				},
+				body: audio,
+				signal: controller.signal,
+			});
+			const payload = await response.json().catch(() => ({}));
+			if (!response.ok || typeof payload.transcript !== "string") {
+				throw new Error(payload.error || "Voice transcription is unavailable. Type your message and try again.");
+			}
+			const transcript = payload.transcript.replace(/\s+/g, " ").trim();
+			if (!transcript) throw new Error("No speech was recognized. Try again or type your message.");
+			setInput((current) => `${current.trim()}${current.trim() ? " " : ""}${transcript}`.slice(0, CONTACT_LIMITS.messageMax));
+			window.requestAnimationFrame(() => inputRef.current?.focus());
+		} catch (error) {
+			if (error.name !== "AbortError") addClientError(error.message || "Voice transcription is unavailable. Type your message and try again.");
+		} finally {
+			if (transcriptionAbortRef.current === controller) transcriptionAbortRef.current = null;
+			setIsTranscribingVoice(false);
+		}
+	};
+
+	const startBrowserSpeechRecognition = async () => {
 		const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 		if (!SpeechRecognition) {
-			addClientError("Voice input is not supported by this browser.");
+			setIsListening(false);
+			addClientError("Voice recording is not supported by this browser. Type your message instead.");
 			return;
 		}
 
-		const recognition = new SpeechRecognition();
-		recognition.lang = "en-IN";
-		recognition.continuous = false;
-		recognition.interimResults = true;
-		recognition.onresult = (resultEvent) => {
-			const transcript = Array.from(resultEvent.results)
-				.map((result) => result[0]?.transcript || "")
-				.join(" ")
-				.trim();
-			setInput(transcript.slice(0, 500));
-		};
-		recognition.onerror = (errorEvent) => {
-			if (!["aborted", "no-speech"].includes(errorEvent.error)) addClientError("Voice input could not be started.");
-		};
-		recognition.onend = () => {
-			recognitionRef.current = null;
-			setIsListening(false);
-		};
-
+		let recognition;
 		try {
+			recognition = new SpeechRecognition();
+			recognition.lang = navigator.language || "en-US";
+			recognition.continuous = false;
+			recognition.interimResults = true;
+			recognition.onresult = (resultEvent) => {
+				const transcript = Array.from(resultEvent.results)
+					.map((result) => result[0]?.transcript || "")
+					.join(" ")
+					.trim();
+				setInput(transcript.slice(0, CONTACT_LIMITS.messageMax));
+			};
+			recognition.onerror = (errorEvent) => {
+				if (recognitionRef.current === recognition) recognitionRef.current = null;
+				setIsListening(false);
+				if (errorEvent.error !== "aborted") {
+					addClientError(speechErrorMessages[errorEvent.error] || "Speech recognition stopped unexpectedly. Type your message or try again.");
+				}
+			};
+			recognition.onend = () => {
+				if (recognitionRef.current !== recognition) return;
+				recognitionRef.current = null;
+				setIsListening(false);
+			};
 			recognitionRef.current = recognition;
 			setIsListening(true);
-			recognition.start();
-		} catch {
-			recognitionRef.current = null;
+			if ("processLocally" in recognition && typeof SpeechRecognition.available === "function") {
+				try {
+					const availability = await SpeechRecognition.available({ langs: [recognition.lang], processLocally: true });
+					if (recognitionRef.current !== recognition) return;
+					if (availability === "available") recognition.processLocally = true;
+				} catch {
+					if (recognitionRef.current !== recognition) return;
+				}
+			}
+			if (recognitionRef.current === recognition) recognition.start();
+		} catch (error) {
+			if (recognitionRef.current === recognition) recognitionRef.current = null;
 			setIsListening(false);
-			addClientError("Voice input could not be started.");
+			addClientError(speechErrorMessages[error?.name] || "Voice input could not start. Type your message instead.");
+		}
+	};
+
+	const toggleListening = async () => {
+		if (isTranscribingVoice || voiceStartPendingRef.current) return;
+		if (mediaRecorderRef.current?.state === "recording") {
+			window.clearTimeout(voiceTimeoutRef.current);
+			mediaRecorderRef.current.stop();
+			return;
+		}
+		if (recognitionRef.current) {
+			try {
+				recognitionRef.current.stop();
+			} catch {
+				recognitionRef.current = null;
+				setIsListening(false);
+			}
+			return;
+		}
+		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder !== "function") {
+			await startBrowserSpeechRecognition();
+			return;
+		}
+
+		voiceStartPendingRef.current = true;
+		setIsListening(true);
+		let stream;
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			if (!voiceStartPendingRef.current || !isAssistantOpen) {
+				stream.getTracks().forEach((track) => track.stop());
+				return;
+			}
+			mediaStreamRef.current = stream;
+			const mimeType = typeof MediaRecorder.isTypeSupported === "function"
+				? ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((candidate) => MediaRecorder.isTypeSupported(candidate))
+				: "";
+			const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+			mediaRecorderRef.current = recorder;
+			voiceChunksRef.current = [];
+			discardVoiceRecordingRef.current = false;
+			recorder.addEventListener("dataavailable", (event) => {
+				if (event.data?.size) voiceChunksRef.current.push(event.data);
+			});
+			recorder.addEventListener("error", () => {
+				discardVoiceRecordingRef.current = true;
+				addClientError("Microphone recording stopped unexpectedly. Check microphone access and try again.");
+				if (recorder.state === "recording") recorder.stop();
+			});
+			recorder.addEventListener("stop", () => {
+				window.clearTimeout(voiceTimeoutRef.current);
+				if (mediaRecorderRef.current === recorder) mediaRecorderRef.current = null;
+				mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+				mediaStreamRef.current = null;
+				setIsListening(false);
+				const shouldDiscard = discardVoiceRecordingRef.current;
+				discardVoiceRecordingRef.current = false;
+				const audio = new Blob(voiceChunksRef.current, { type: recorder.mimeType || mimeType || "audio/webm" });
+				voiceChunksRef.current = [];
+				if (!shouldDiscard) void transcribeVoiceRecording(audio);
+			}, { once: true });
+			recorder.start(250);
+			voiceTimeoutRef.current = window.setTimeout(() => {
+				if (mediaRecorderRef.current === recorder && recorder.state === "recording") recorder.stop();
+			}, MAX_VOICE_RECORDING_MS);
+		} catch (error) {
+			stream?.getTracks().forEach((track) => track.stop());
+			mediaStreamRef.current = null;
+			setIsListening(false);
+			addClientError(speechErrorMessages[error?.name] || "Microphone could not start. Check permission and type your message if it remains unavailable.");
+		} finally {
+			voiceStartPendingRef.current = false;
 		}
 	};
 
@@ -597,6 +786,16 @@ const ChatPanel = () => {
 							<h2>{portfolioData.assistantName}</h2>
 						</div>
 					</div>
+					{visitorName && <button
+						className={styles.newChatButton}
+						type="button"
+						onClick={() => void startNewChat()}
+						disabled={isStartingNewChat || isUploading || isContactSubmitting}
+						aria-label="Start a new chat"
+						title="Start a new chat"
+					>
+						<FaPlus aria-hidden="true" />
+					</button>}
 					<button className={styles.closeButton} type="button" onClick={closeAssistant} aria-label="Close assistant">
 						<FaTimes aria-hidden="true" />
 					</button>
@@ -611,15 +810,6 @@ const ChatPanel = () => {
 						<button type="button" className={styles.contactButton} onClick={() => startContactFlow()} aria-label="Email Tanmoy" disabled={Boolean(contactFlowStep) || isContactSubmitting}>
 							<FaEnvelope aria-hidden="true" />
 							<span>Email Tanmoy</span>
-						</button>
-						<button
-							type="button"
-							className={`${styles.voiceToggle} ${voiceRepliesEnabled ? styles.activeControl : ""}`}
-							onClick={() => setVoiceRepliesEnabled((current) => !current)}
-							aria-label={voiceRepliesEnabled ? "Disable spoken replies" : "Enable spoken replies"}
-							title={voiceRepliesEnabled ? "Spoken replies on" : "Spoken replies off"}
-						>
-							{voiceRepliesEnabled ? <FaVolumeUp aria-hidden="true" /> : <FaVolumeMute aria-hidden="true" />}
 						</button>
 					</div>}
 				</div>
@@ -644,7 +834,7 @@ const ChatPanel = () => {
 							/>
 							{nameError && <span className={styles.nameError} role="alert">{nameError}</span>}
 							<button type="submit" disabled={draftName.trim().length < 2}>Continue</button>
-							<small className={styles.retentionNote}>Your name and chat are retained for 90 days. Don&apos;t share sensitive information.</small>
+							<small className={styles.retentionNote}>Your name and chat are retained for 90 days. Voice clips up to 15 seconds are sent to Gemini for transcription and aren&apos;t stored. Don&apos;t share sensitive information.</small>
 						</form>
 					) : (
 						<>
@@ -735,7 +925,19 @@ const ChatPanel = () => {
 								<strong>Choose files</strong>
 								<span>or drop them here</span>
 							</button>
-							{uploadError && <p className={styles.uploadError} role="alert">{uploadError}</p>}
+							{uploadError && <div className={styles.uploadError} role="alert">
+								<p>{uploadError}</p>
+								{uploadError.includes("retain at most five files") && (
+									<button
+										className={styles.newSessionButton}
+										type="button"
+										onClick={() => void startNewChat({ preservePendingFiles: true })}
+										disabled={isStartingNewChat}
+									>
+										{isStartingNewChat ? "Starting a fresh chat..." : "Start a fresh chat and retry"}
+									</button>
+								)}
+							</div>}
 
 							<div className={styles.fileReview}>
 								{attachments.length > 0 && (
@@ -814,7 +1016,9 @@ const ChatPanel = () => {
 						</div>
 					)}
 					{isUploading && <p className={styles.uploadStatus}>Encrypting and storing files...</p>}
-					<div className={styles.composerRow}>
+					{isListening && <p className={styles.uploadStatus} role="status">Recording voice... Tap the microphone to stop.</p>}
+					{isTranscribingVoice && <p className={styles.uploadStatus} role="status">Transcribing voice...</p>}
+					<div className={`${styles.composerRow} ${contactFlowStep === "message" ? styles.messageComposerRow : ""}`}>
 						<button
 							ref={uploadTriggerRef}
 							type="button"
@@ -858,15 +1062,17 @@ const ChatPanel = () => {
 							type="button"
 							className={`${styles.toolButton} ${isListening ? styles.activeControl : ""}`}
 							onClick={toggleListening}
-							aria-label={isListening ? "Stop voice input" : "Start voice input"}
-							title={isListening ? "Stop listening" : "Use microphone"}
+							disabled={isTranscribingVoice || isUploading || isTyping}
+							aria-label={isTranscribingVoice ? "Transcribing voice input" : isListening ? "Stop voice recording" : "Start voice recording"}
+							aria-pressed={isListening}
+							title={isTranscribingVoice ? "Transcribing voice" : isListening ? "Stop recording" : "Record up to 15 seconds; sent to Gemini for transcription, not stored"}
 						>
 							<FaMicrophone aria-hidden="true" />
 						</button>
 						<button
 							type="submit"
 							className={styles.sendButton}
-							disabled={(!input.trim() && attachments.length === 0) || (!contactFlowStep && activeConnectionState !== "ready") || isTyping || isUploading || isContactSubmitting}
+							disabled={(!input.trim() && attachments.length === 0) || (!contactFlowStep && activeConnectionState !== "ready" && !contactIntentPattern.test(input.trim())) || isTyping || isUploading || isContactSubmitting}
 							aria-label="Send message"
 						>
 							<FaArrowUp aria-hidden="true" />

@@ -36,7 +36,7 @@ HTTP 200 confirms Static Forms recorded the submission, not that the notificatio
 
 ### `POST /api/chat/token`
 
-Same-origin request with no body. The response sets an HttpOnly, SameSite=Strict session cookie and returns a short-lived origin-bound token plus the configured Function URL.
+Same-origin request with no body. The response sets an HttpOnly, SameSite=Strict session cookie and returns a short-lived origin-bound token plus the configured Function URL. Send `X-Portfolio-New-Chat: true` to rotate the session cookie and begin a fresh chat/upload quota.
 
 ```json
 {
@@ -71,6 +71,20 @@ Requires the matching `Origin`, `Authorization: Bearer <token>`, and multipart f
 - `422`: file validation or session limit failed.
 - `405`: method is not allowed.
 - `503`: storage is unavailable.
+
+### `POST /transcribe`
+
+Requires the matching `Origin`, `Authorization: Bearer <token>`, and a short audio body. Supported MIME types are `audio/webm`, `audio/mp4`, and `audio/ogg`; audio is limited to 2 MiB and six requests per session per minute. The Function sends audio to Gemini for transcription, returns `{ "transcript": "..." }`, and does not store or log the audio.
+
+- `200`: transcript returned.
+- `204`: CORS preflight accepted.
+- `401`: invalid or expired token.
+- `403`: origin is not allowed.
+- `413`: audio is over 2 MiB.
+- `415`: audio format is unsupported.
+- `422`: no usable audio or transcript.
+- `429`: transcription rate limit exceeded.
+- `503`: transcription service is unavailable.
 
 ### `GET /ws?token=<short-lived token>`
 

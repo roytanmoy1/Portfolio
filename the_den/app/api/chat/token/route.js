@@ -41,7 +41,8 @@ export async function POST(request) {
 	try {
 		const websocketUrl = normalizeWebSocketUrl(process.env.CHAT_WEBSOCKET_URL);
 		const cookieSession = request.cookies.get("portfolio_chat_session")?.value;
-		const sessionId = sessionPattern.test(cookieSession || "") ? cookieSession : randomUUID();
+		const startNewChat = request.headers.get("x-portfolio-new-chat") === "true";
+		const sessionId = !startNewChat && sessionPattern.test(cookieSession || "") ? cookieSession : randomUUID();
 		const token = await issueChatToken({ origin, secret: process.env.CHAT_TOKEN_SECRET, sessionId });
 		const tokenResponse = response({ token, websocketUrl }, 200);
 		tokenResponse.cookies.set("portfolio_chat_session", sessionId, {
