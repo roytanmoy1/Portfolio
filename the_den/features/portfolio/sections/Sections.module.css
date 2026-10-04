@@ -305,11 +305,12 @@
 	line-height: 1.35;
 }
 
-.contactStrip {
+.heroContactGrid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 	gap: 0.6rem;
-	margin-top: 1.25rem;
+	align-items: stretch;
+	margin-top: 1rem;
 }
 
 .contactItem {
@@ -317,6 +318,8 @@
 	align-items: center;
 	gap: 0.6rem;
 	min-width: 0;
+	height: 100%;
+	min-height: 4.25rem;
 	padding: 0.7rem;
 	border: 1px solid var(--glass-border);
 	border-radius: 0.7rem;
@@ -339,6 +342,7 @@
 }
 
 .contactText {
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -354,61 +358,11 @@
 	text-transform: uppercase;
 }
 
-.locationMap {
-	display: flex;
-	grid-column: 1 / -1;
-	align-items: center;
-	gap: 0.75rem;
-	min-width: 0;
-	min-height: 4.25rem;
-	overflow: hidden;
-	border: 1px solid var(--glass-border);
-	border-radius: 0.7rem;
-	padding: 0.7rem 0.8rem;
-	background: var(--glass-soft);
-	color: var(--accent-color);
-	transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
-}
-
-.locationMap:hover,
-.locationMap:focus-visible {
-	transform: translateY(-2px);
-	border-color: var(--accent-border);
-	background: var(--accent-transparent);
-}
-
-.locationMap > svg {
+.contactExternalIcon {
 	flex: 0 0 auto;
-}
-
-.locationDetails {
-	display: grid;
-	min-width: 0;
-	gap: 0.08rem;
-}
-
-.locationDetails small {
-	color: var(--text-subtle);
-	font-size: 0.58rem;
-	font-weight: 800;
-	text-transform: uppercase;
-}
-
-.locationDetails strong {
-	color: var(--text-primary);
-	font-size: 0.72rem;
-	font-weight: 750;
-}
-
-.locationOpen {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
 	margin-left: auto;
 	color: var(--accent-color);
-	font-size: 0.64rem;
-	font-weight: 800;
-	white-space: nowrap;
+	font-size: 0.62rem;
 }
 
 :global(.light) .heroPanel {
@@ -441,8 +395,8 @@
 	background: transparent;
 }
 
-:global(.light) .contactStrip {
-	gap: 0 1rem;
+:global(.light) .heroContactGrid {
+	gap: 0.6rem 1rem;
 }
 
 :global(.light) .contactItem {
@@ -453,11 +407,11 @@
 	background: transparent;
 }
 
-:global(.light) .locationMap {
-	border: 0;
-	border-top: 1px solid var(--glass-border);
-	border-radius: 0;
-	background: transparent;
+:global(.light) .heroContactGrid .heroContactItem {
+	padding: 0.7rem;
+	border: 1px solid var(--glass-border);
+	border-radius: 0.7rem;
+	background: var(--glass-soft);
 }
 
 /* About */
@@ -1450,6 +1404,10 @@
 		grid-template-columns: 1fr;
 	}
 
+
+	.heroContactGrid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 	.heroGrid {
 		gap: 2rem;
 	}
@@ -1635,7 +1593,7 @@
 }
 
 @media (max-width: 350px) {
-	.contactStrip {
+	.heroContactGrid {
 		grid-template-columns: 1fr;
 	}
 }

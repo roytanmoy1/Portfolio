@@ -82,45 +82,45 @@ const HomeSection = ({ id }) => {
 								</div>
 							))}
 						</div>
-
-						<div className={styles.contactStrip}>
-							<a className={styles.contactItem} href={`mailto:${portfolioData.email}`}>
-								<FaEnvelope className={styles.contactIcon} aria-hidden="true" />
-								<span className={styles.contactText}>
-									<span className={styles.contactLabel}>Email</span>
-									{portfolioData.email}
-								</span>
-							</a>
-							<a className={styles.contactItem} href={`tel:${portfolioData.phones[0].replace(/\D/g, "")}`}>
-								<FaPhone className={styles.contactIcon} aria-hidden="true" />
-								<span className={styles.contactText}>
-									<span className={styles.contactLabel}>Call</span>
-									{portfolioData.phones[0]}
-								</span>
-							</a>
-							<a className={styles.contactItem} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
-								<FaLinkedinIn className={styles.contactIcon} aria-hidden="true" />
-								<span className={styles.contactText}>
-									<span className={styles.contactLabel}>Profile</span>
-									LinkedIn
-								</span>
-							</a>
-							<a
-								className={styles.locationMap}
-								href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(portfolioData.location)}`}
-								target="_blank"
-								rel="noreferrer"
-								aria-label={`View ${portfolioData.location} on Google Maps`}
-							>
-								<FaMapMarkerAlt aria-hidden="true" />
-								<span className={styles.locationDetails}>
-									<small>Based in</small>
-									<strong>{portfolioData.location}</strong>
-								</span>
-								<span className={styles.locationOpen}>View map <FaExternalLinkAlt aria-hidden="true" /></span>
-							</a>
-						</div>
 					</aside>
+				</div>
+
+				<div className={styles.heroContactGrid} aria-label="Contact and location">
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`mailto:${portfolioData.email}`}>
+						<FaEnvelope className={styles.contactIcon} aria-hidden="true" />
+						<span className={styles.contactText}>
+							<span className={styles.contactLabel}>Email</span>
+							{portfolioData.email}
+						</span>
+					</a>
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`tel:${portfolioData.phones[0].replace(/\D/g, "")}`}>
+						<FaPhone className={styles.contactIcon} aria-hidden="true" />
+						<span className={styles.contactText}>
+							<span className={styles.contactLabel}>Call</span>
+							{portfolioData.phones[0]}
+						</span>
+					</a>
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+						<FaLinkedinIn className={styles.contactIcon} aria-hidden="true" />
+						<span className={styles.contactText}>
+							<span className={styles.contactLabel}>Profile</span>
+							LinkedIn
+						</span>
+					</a>
+					<a
+						className={`${styles.contactItem} ${styles.heroContactItem}`}
+						href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(portfolioData.location)}`}
+						target="_blank"
+						rel="noreferrer"
+						aria-label={`View ${portfolioData.location} on Google Maps`}
+					>
+						<FaMapMarkerAlt className={styles.contactIcon} aria-hidden="true" />
+						<span className={styles.contactText}>
+							<span className={styles.contactLabel}>Location</span>
+							{portfolioData.location}
+						</span>
+						<FaExternalLinkAlt className={styles.contactExternalIcon} aria-hidden="true" />
+					</a>
 				</div>
 			</div>
 		</section>
