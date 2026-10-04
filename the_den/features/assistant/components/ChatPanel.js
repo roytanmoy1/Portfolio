@@ -89,6 +89,10 @@ const formatFileSize = (bytes) => {
 	if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
 	return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
+const getRequestErrorMessage = (error, fallback) =>
+	error?.name === "TypeError" && /fetch|network/i.test(error.message || "")
+		? "Could not reach the service. Check your connection and try again."
+		: error?.message || fallback;
 
 const initialContactForm = { name: "", email: "", message: "" };
 
@@ -196,7 +200,7 @@ const ChatPanel = () => {
 			setMessages((current) => [...current, {
 				id: createId(),
 				role: "error",
-				text: error.message || "A fresh chat session could not be started.",
+				text: getRequestErrorMessage(error, "A fresh chat session could not be started."),
 			}]);
 		} finally {
 			setIsStartingNewChat(false);
@@ -567,7 +571,7 @@ const ChatPanel = () => {
 			setPendingFiles([]);
 			setIsUploadDialogOpen(false);
 		} catch (error) {
-			setUploadError(error.message || "Files could not be stored.");
+			setUploadError(getRequestErrorMessage(error, "Files could not be stored."));
 		} finally {
 			setIsUploading(false);
 		}
@@ -606,7 +610,7 @@ const ChatPanel = () => {
 			setInput((current) => `${current.trim()}${current.trim() ? " " : ""}${transcript}`.slice(0, CONTACT_LIMITS.messageMax));
 			window.requestAnimationFrame(() => inputRef.current?.focus());
 		} catch (error) {
-			if (error.name !== "AbortError") addClientError(error.message || "Voice transcription is unavailable. Type your message and try again.");
+			if (error.name !== "AbortError") addClientError(getRequestErrorMessage(error, "Voice transcription is unavailable. Type your message and try again."));
 		} finally {
 			if (transcriptionAbortRef.current === controller) transcriptionAbortRef.current = null;
 			setIsTranscribingVoice(false);
