@@ -45,12 +45,12 @@ const ContactSection = ({ id }) => {
 			});
 			const result = await response.json().catch(() => ({}));
 
-			if (!response.ok || result.delivery !== "smtp") {
+			if (!response.ok || result.delivery !== "received") {
 				throw new Error(result.error || "The message could not be sent.");
 			}
 
 			setForm(initialForm);
-			setStatus({ type: "success", message: "Your message was accepted by the email server for delivery." });
+			setStatus({ type: "success", message: "Your message was recorded. Email notifications may be delayed; Tanmoy can reply to your address." });
 		} catch (error) {
 			setStatus({
 				type: "error",

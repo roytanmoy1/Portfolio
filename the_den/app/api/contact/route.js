@@ -91,7 +91,7 @@ export async function POST(request) {
 		const delivery = await sendContactEmail({ name, email, message });
 		if (!delivery.configured) return response({ error: "Email delivery is not configured." }, 503);
 		if (!delivery.accepted) return response({ error: "Email delivery failed." }, 502);
-		return response({ ok: true, delivery: "smtp" }, 200);
+		return response({ ok: true, delivery: "received" }, 200);
 	} catch (error) {
 		console.error("Contact email delivery failed.", {
 			code: typeof error?.code === "string" ? error.code : "UNKNOWN",

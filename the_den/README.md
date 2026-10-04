@@ -23,29 +23,23 @@ npm run start
 - Frontend: Next.js 16 App Router, React 19, JavaScript, CSS Modules, and React Icons.
 - Web backend: Node.js Next.js route handlers for contact delivery, portfolio data, and short-lived chat tokens.
 - Assistant backend: a Node.js 24 Neon Function using WebSockets, Neon Postgres, and Gemini.
-- Data and delivery: Neon Postgres and authenticated Gmail SMTP through Nodemailer.
+- Data and delivery: Neon Postgres and Static Forms for contact submission/email notification.
 
 `app/` contains route entrypoints and global styles. Feature code is grouped under `features/assistant`, `features/contact`, `features/navigation`, `features/portfolio`, and `features/theme`. The Neon entrypoint stays at `functions/chat.js`, which re-exports the assistant implementation from `features/assistant/server`; reusable sortable UI lives in `shared/components`, and server-only database access lives in `server`. Portfolio sections share one feature-owned CSS Module, while the assistant, navigation, and sortable grid keep focused CSS Modules. See [docs/api.md](docs/api.md) for HTTP and WebSocket contracts.
 
 ## Contact form
 
-The form posts to `/api/contact`. The route normalizes and validates fields, checks origin and body size, applies a honeypot and per-instance rate limit, and stores validated submissions in Neon when configured. SMTP is the primary sender; the visitor's address is used as `Reply-To` while the authenticated mailbox remains the sender.
+The form posts to `/api/contact`. The route normalizes and validates fields, checks origin and body size, applies a honeypot and per-instance rate limit, stores validated submissions in Neon when configured, then calls Static Forms from the server. The API key is never sent to the browser.
 
-For Gmail, enable 2-Step Verification, create an app password, and set these server-only values in `.env.local` and Vercel:
+Create a free Static Forms account, create a form addressed to your inbox, and set its server-only API key in `.env.local` and Vercel:
 
 ```dotenv
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=you@gmail.com
-SMTP_PASS=your-16-character-app-password
-SMTP_FROM_EMAIL=you@gmail.com
-CONTACT_TO_EMAIL=you@gmail.com
+STATIC_FORMS_API_KEY=your-static-forms-api-key
 ```
 
-Use the mailbox address for `SMTP_FROM_EMAIL`; `CONTACT_TO_EMAIL` is the inbox that should receive enquiries. HTTP 200 means the configured SMTP server accepted the message for delivery. If SMTP authentication fails, the route returns an error instead of reporting a successful send. Validated submissions remain in Neon when database storage is configured.
+The current free plan includes 250 submissions per month. HTTP 200 means the provider accepted and recorded the submission; it does not guarantee inbox placement. Use the Static Forms dashboard as the source of truth if an email notification is delayed or filtered. Validated submissions also remain in Neon when database storage is configured.
 
-A production `EAUTH` / SMTP `535` log means Gmail rejected `SMTP_PASS`; create a current 16-character Gmail app password and replace `SMTP_PASS` in Vercel. Never paste the password into chat. The contact test is `npm run test:contact`.
+Keep `STATIC_FORMS_API_KEY` server-only and never prefix it with `NEXT_PUBLIC_`. The contact test is `npm run test:contact`.
 
 Never commit `.env.local`, mailbox passwords, or app passwords.
 
@@ -106,7 +100,7 @@ To deploy the updated version on Vercel:
 3. Use the default Next.js build settings.
 4. Add `NEXT_PUBLIC_SITE_URL` with the final public URL.
 5. Add the server-only `DATABASE_URL` from Neon.
-6. Add the server-only SMTP variables from the contact-form section.
+6. Add the server-only `STATIC_FORMS_API_KEY` from the contact-form section.
 7. Deploy the Neon Function and add the chat variables from the portfolio-assistant section.
 8. Deploy and submit a real test message before relying on the form.
 9. Verify `/`, `/robots.txt`, `/sitemap.xml`, `/api/portfolio`, `/api/chat/token`, the assistant WebSocket, and the resume download.

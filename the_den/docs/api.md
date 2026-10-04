@@ -18,19 +18,19 @@ Reports the content source. When Neon is configured, the response includes the s
 
 Accepts same-origin JSON. `name` must be 2-80 characters, `email` a valid address up to 254 characters, and `message` 10-4,000 characters. `company` is a honeypot field and should be empty. Requests are limited to 5 per 15 minutes per running route instance. Validated content is stored in `contact_messages` before delivery when `DATABASE_URL` is configured.
 
-SMTP is primary. The visitor address is set as `Reply-To`; the configured mailbox remains the sender.
+The route submits to Static Forms using the server-only `STATIC_FORMS_API_KEY`. The visitor email is sent as the reply-to address. Static Forms records accepted submissions in its dashboard and sends the configured notification.
 
-- `200`: SMTP accepted the message: `{ "ok": true, "delivery": "smtp" }`.
+- `200`: Static Forms accepted and recorded the message: `{ "ok": true, "delivery": "received" }`.
 - `400`: malformed JSON or form payload.
 - `403`: origin mismatch.
 - `413`: request exceeds 32 KiB.
 - `415`: request is not JSON.
 - `422`: field validation failed.
 - `429`: rate limit exceeded.
-- `502`: SMTP rejected the message or could not accept the delivery.
-- `503`: Neon storage or SMTP is not configured/available.
+- `502`: Static Forms rejected the submission or could not accept it.
+- `503`: Neon storage or Static Forms is not configured/available.
 
-HTTP 200 confirms the configured SMTP server accepted the message. It cannot guarantee final inbox placement. If logs show `EAUTH` / `535`, replace the rejected Gmail app password.
+HTTP 200 confirms Static Forms recorded the submission, not that the notification reached the inbox. Its dashboard is the source of truth for accepted submissions; the free plan currently includes 250 submissions per month.
 
 ## Chat token
 

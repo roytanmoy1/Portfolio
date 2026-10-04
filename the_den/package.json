@@ -15,7 +15,7 @@
     "test:chat-audit": "node scripts/verify-chat-audit.mjs",
     "test:chat-schema": "node scripts/verify-chat-schema.mjs",
     "test:chat-storage": "node scripts/verify-chat-storage.mjs",
-    "test:contact": "node scripts/test-contact-smtp.mjs",
+    "test:contact": "node scripts/test-contact-provider.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./features --watch ./shared --watch ./server --watch ./functions --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
   },
@@ -28,7 +28,6 @@
     "@neondatabase/serverless": "^1.1.0",
     "jose": "^6.2.12",
     "next": "^16.3.6",
-    "nodemailer": "^10.0.10",
     "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

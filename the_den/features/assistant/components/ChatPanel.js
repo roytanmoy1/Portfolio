@@ -160,13 +160,13 @@ const ChatPanel = () => {
 				body: JSON.stringify(fields),
 			});
 			const result = await response.json().catch(() => ({}));
-			if (!response.ok || result.delivery !== "smtp") {
+			if (!response.ok || result.delivery !== "received") {
 				throw new Error(result.error || "The email server could not confirm delivery.");
 			}
 			setMessages((current) => [...current, {
 				id: createId(),
 				role: "assistant",
-				text: "Your message was accepted by the email server for delivery. Tanmoy can reply to the address you provided.",
+				text: "Your message was recorded. An email notification was requested; Tanmoy can reply to the address you provided.",
 			}]);
 		} catch (error) {
 			setMessages((current) => [...current, {
