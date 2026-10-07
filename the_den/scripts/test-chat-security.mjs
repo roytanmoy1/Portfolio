@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { strToU8, zipSync } from "fflate";
 import { jwtVerify } from "jose";
-import { portfolioData } from "../features/portfolio/data/portfolioData.js";
 import {
 	MAX_CHAT_FILE_BYTES,
 	decryptChatFile,
@@ -31,7 +30,64 @@ import {
 	normalizeWebSocketUrl,
 } from "../features/assistant/domain/chatToken.js";
 
+const portfolioData = {
+	name: "Avery Example",
+	shortName: "Avery",
+	title: "Lead Engineer",
+	location: "Sample City",
+	profile: "A synthetic portfolio fixture for assistant tests.",
+	email: "avery@example.test",
+	phones: ["+10000000000"],
+	linkedin: "https://www.linkedin.com/in/avery-example/",
+	github: "https://github.com/avery-example",
+	highlights: [{ value: "1", label: "sample result" }],
+	aboutPoints: [{ label: "Example", text: "Synthetic profile content." }],
+	skills: [
+		{ category: "Frontend", items: [{ name: "React", level: 90 }] },
+		{ category: "Backend & APIs", items: [{ name: "Node.js", level: 90 }] },
+		{ category: "Cloud & DevOps", items: [{ name: "AWS", level: 90 }] },
+		{ category: "Data, AI & Quality", items: [{ name: "WebSockets", level: 90 }] },
+	],
+	experience: [{
+		company: "Example Studio",
+		role: "Lead Engineer",
+		dates: "Jan 2024 — Present",
+		location: "Sample City",
+		summary: "Leads a three-engineer team building an enterprise AI platform.",
+		current: true,
+		stack: ["React", "Redux Toolkit", "Node.js"],
+		highlights: ["Built a real-time assistant."],
+	}],
+	projects: [
+		{
+			title: "Example AI Hub",
+			client: "Example Studio",
+			period: "Jan 2024 — Present",
+			category: "Generative AI",
+			metric: "3-engineer team",
+			description: "An enterprise conversational AI platform.",
+			stack: ["React", "WebSockets"],
+			highlights: ["Built an AI assistant."],
+		},
+		{
+			title: "Route Explorer",
+			client: "Example Studio",
+			period: "Feb 2024 — May 2024",
+			category: "Data",
+			metric: "Two regions",
+			description: "A route-planning tool.",
+			stack: ["React", "WebSockets"],
+			highlights: ["Mapped delivery routes."],
+		},
+	],
+	personalProjects: [],
+	leetcode: { url: "https://leetcode.com/avery-example/", username: "avery-example" },
+	education: { degree: "B.S.", institution: "Example College", discipline: "Computer Science", years: "2020 — 2024", result: "Pass" },
+	certifications: ["Example certification"],
+};
+
 assert.equal(getGuardrailRefusal("What projects has Tanmoy built?"), null);
+assert.equal(getGuardrailRefusal("What does Avery do?"), null);
 assert.equal(getGuardrailRefusal("What are his top 4 skillsets?"), null);
 assert.equal(getGuardrailRefusal("What are Tanmoys top 4 skillsets?"), null);
 assert.equal(getGuardrailRefusal("Hello!"), null);
@@ -52,27 +108,28 @@ assert.equal(redactChatLogText("api key=AIzaExampleValue123456789"), "api key=[R
 
 const greeting = getDirectPortfolioResponse("hi", { visitorName: "Asha", portfolioData });
 assert.match(greeting, /^Hi Asha\./);
+assert.match(getDirectPortfolioResponse("What does Avery do?", { visitorName: "Asha", portfolioData }), /currently Lead Engineer at Example Studio/);
 assert.equal(getDirectPortfolioResponse("hi", { visitorName: "Asha", portfolioData, hasAttachments: true }), null);
 const topSkills = getDirectPortfolioResponse("What are his top 4 skillsets?", { visitorName: "Asha", portfolioData });
 assert.match(topSkills, /Frontend/);
 assert.match(topSkills, /Backend & APIs/);
 assert.match(topSkills, /Cloud & DevOps/);
 assert.match(topSkills, /Data, AI & Quality/);
-assert.match(getDirectPortfolioResponse("Which projects show AI experience?", { visitorName: "Asha", portfolioData }), /EPIC Hub/);
+assert.match(getDirectPortfolioResponse("Which projects show AI experience?", { visitorName: "Asha", portfolioData }), /Example AI Hub/);
 
 let conversationHistory = appendChatHistory([], "What is Tanmoy's current role?", "Tanmoy is a consultant.");
 assert.equal(getGuardrailRefusal("Tell me more", { hasConversation: conversationHistory.length > 0 }), null);
 const roleFollowUp = getContextualPortfolioResponse("Tell me more", { history: conversationHistory, portfolioData });
-assert.match(roleFollowUp, /3-engineer team/);
+assert.match(roleFollowUp, /three-engineer team/);
 assert.match(roleFollowUp, /React, Redux Toolkit, Node\.js/);
 assert.match(getContextualPortfolioResponse("What skills support this role?", { history: conversationHistory, portfolioData }), /React, Redux Toolkit, Node\.js/);
-assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /EPIC Hub/);
+assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Example AI Hub/);
 assert.equal(getContextualPortfolioResponse("Tell me more", { history: conversationHistory, portfolioData, hasAttachments: true }), null);
 conversationHistory = appendChatHistory(conversationHistory, "What skills support this role?", "React and Node.js support the role.");
-assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Supply Explorer/);
-const projectHistory = appendChatHistory([], "Which projects show AI experience?", "EPIC Hub and SenseAI.");
+assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Route Explorer/);
+const projectHistory = appendChatHistory([], "Which projects show AI experience?", "Example AI Hub.");
 assert.match(getContextualPortfolioResponse("What skills do those projects demonstrate?", { history: projectHistory, portfolioData }), /WebSockets/);
-assert.match(getContextualPortfolioResponse("Which project best shows leadership?", { history: projectHistory, portfolioData }), /EPIC Hub/);
+assert.match(getContextualPortfolioResponse("Which project best shows leadership?", { history: projectHistory, portfolioData }), /Example AI Hub/);
 for (let index = 0; index < 5; index += 1) {
 	conversationHistory = appendChatHistory(conversationHistory, `Question ${index}`, `Answer ${index}`);
 }

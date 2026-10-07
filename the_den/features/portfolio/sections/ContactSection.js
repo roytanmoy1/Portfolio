@@ -5,11 +5,10 @@ import { FaEnvelope, FaGithub, FaLinkedinIn, FaPhone } from "react-icons/fa";
 import { SiLeetcode } from "react-icons/si";
 import styles from "./Sections.module.css";
 import { CONTACT_LIMITS, getContactValidationError, normalizeContactFields } from "../../contact/contactValidation";
-import { portfolioData } from "../data/portfolioData";
 
 const initialForm = { name: "", email: "", message: "", company: "" };
 
-const ContactSection = ({ id }) => {
+const ContactSection = ({ id, home }) => {
 	const [form, setForm] = useState(initialForm);
 	const [status, setStatus] = useState({ type: "", message: "" });
 	const [loading, setLoading] = useState(false);
@@ -50,7 +49,7 @@ const ContactSection = ({ id }) => {
 			}
 
 			setForm(initialForm);
-			setStatus({ type: "success", message: "Your message was recorded. Email notifications may be delayed; Tanmoy can reply to your address." });
+			setStatus({ type: "success", message: `Your message was recorded. Email notifications may be delayed; ${home.shortName} can reply to your address.` });
 		} catch (error) {
 			setStatus({
 				type: "error",
@@ -74,20 +73,20 @@ const ContactSection = ({ id }) => {
 						</p>
 
 						<div className={styles.contactLinks}>
-							<a className={styles.contactLink} href={`mailto:${portfolioData.email}`}>
-								<FaEnvelope aria-hidden="true" /> {portfolioData.email}
+							<a className={styles.contactLink} href={`mailto:${home.email}`}>
+								<FaEnvelope aria-hidden="true" /> {home.email}
 							</a>
-							<a className={styles.contactLink} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+							<a className={styles.contactLink} href={home.linkedin} target="_blank" rel="noreferrer">
 								<FaLinkedinIn aria-hidden="true" /> LinkedIn profile
 						</a>
-							<a className={styles.contactLink} href={portfolioData.github} target="_blank" rel="noreferrer">
+							<a className={styles.contactLink} href={home.github} target="_blank" rel="noreferrer">
 								<FaGithub aria-hidden="true" /> GitHub profile
 						</a>
-							<a className={styles.contactLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
+							<a className={styles.contactLink} href={home.leetcode.url} target="_blank" rel="noreferrer">
 								<SiLeetcode aria-hidden="true" /> LeetCode profile
 							</a>
-							<a className={styles.contactLink} href={`tel:${portfolioData.phones[0].replace(/\D/g, "")}`}>
-								<FaPhone aria-hidden="true" /> {portfolioData.phones.join("  ·  ")}
+							<a className={styles.contactLink} href={`tel:${home.phones[0].replace(/\D/g, "")}`}>
+								<FaPhone aria-hidden="true" /> {home.phones.join("  ·  ")}
 							</a>
 						</div>
 					</div>
@@ -125,7 +124,7 @@ const ContactSection = ({ id }) => {
 						{status.message && (
 							<p className={`${styles.status} ${status.type === "success" ? styles.success : styles.error}`} role="status" aria-live="polite">
 								{status.message}
-								{status.type === "error" && <>{" "}<a href={`mailto:${portfolioData.email}`}>Email me directly.</a></>}
+								{status.type === "error" && <>{" "}<a href={`mailto:${home.email}`}>Email me directly.</a></>}
 							</p>
 						)}
 					</form>

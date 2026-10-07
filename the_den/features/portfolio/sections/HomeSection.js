@@ -3,9 +3,10 @@
 import { FaArrowDown, FaEnvelope, FaExternalLinkAlt, FaLinkedinIn, FaMapMarkerAlt, FaPhone } from "react-icons/fa";
 import Image from "next/image";
 import styles from "./Sections.module.css";
-import { portfolioData } from "../data/portfolioData";
 
-const HomeSection = ({ id }) => {
+const HomeSection = ({ id, data }) => {
+	const [firstName, ...lastName] = data.name.split(/\s+/);
+	const currentRole = data.currentRole;
 	const scrollToAbout = () => {
 		document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
 	};
@@ -15,17 +16,17 @@ const HomeSection = ({ id }) => {
 			<div className={styles.sectionInner}>
 				<div className={styles.heroGrid}>
 					<div className={styles.heroCopy}>
-						<p className={styles.eyebrow}>Consultant · Full Stack Engineer</p>
+						<p className={styles.eyebrow}>{data.title}</p>
 						<h1 className={styles.heroTitle}>
-							Tanmoy
-							<span className={styles.titleAccent}>Kumar Roy</span>
+							{firstName}
+							<span className={styles.titleAccent}>{lastName.join(" ")}</span>
 						</h1>
-						<p className={styles.heroLead}>{portfolioData.profile}</p>
+						<p className={styles.heroLead}>{data.profile}</p>
 
 						<div className={styles.heroActions}>
 							<a
-								href={portfolioData.resume}
-								download="Tanmoy-Kumar-Roy-Resume.pdf"
+								href={data.resume}
+								download={data.resume.split("/").at(-1)}
 								className={styles.primary}
 							>
 								Download resume <FaArrowDown aria-hidden="true" />
@@ -36,16 +37,16 @@ const HomeSection = ({ id }) => {
 						</div>
 
 						<div className={styles.heroLinks}>
-							<a className={styles.textLink} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+							<a className={styles.textLink} href={data.linkedin} target="_blank" rel="noreferrer">
 								LinkedIn
 							</a>
-							<a className={styles.textLink} href={portfolioData.github} target="_blank" rel="noreferrer">
+							<a className={styles.textLink} href={data.github} target="_blank" rel="noreferrer">
 								GitHub
 							</a>
-							<a className={styles.textLink} href={portfolioData.leetcode.url} target="_blank" rel="noreferrer">
+							<a className={styles.textLink} href={data.leetcode.url} target="_blank" rel="noreferrer">
 								LeetCode
 						</a>
-							<a className={styles.textLink} href={`mailto:${portfolioData.email}`}>
+							<a className={styles.textLink} href={`mailto:${data.email}`}>
 								Send a message
 							</a>
 						</div>
@@ -60,8 +61,8 @@ const HomeSection = ({ id }) => {
 						<div className={styles.panelHeader}>
 							<div className={styles.avatar}>
 								<Image
-									src={portfolioData.photo}
-									alt="Tanmoy Kumar Roy standing in front of a waterfall"
+									src={data.photo}
+									alt={`${data.name} profile photo`}
 									width={96}
 									height={96}
 									className={styles.avatarImage}
@@ -70,12 +71,14 @@ const HomeSection = ({ id }) => {
 							</div>
 							<div>
 								<p className={styles.panelKicker}>Currently</p>
-								<h2 className={styles.panelTitle}>Consultant at Deloitte USI</h2>
+								<h2 className={styles.panelTitle}>
+									{currentRole ? `${currentRole.role} at ${currentRole.company}` : data.title}
+								</h2>
 							</div>
 						</div>
 
 						<div className={styles.statGrid}>
-							{portfolioData.highlights.map((stat) => (
+							{data.highlights.map((stat) => (
 								<div className={styles.statCard} key={stat.label}>
 									<strong className={styles.statValue}>{stat.value}</strong>
 									<span className={styles.statLabel}>{stat.label}</span>
@@ -86,21 +89,21 @@ const HomeSection = ({ id }) => {
 				</div>
 
 				<div className={styles.heroContactGrid} aria-label="Contact and location">
-					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`mailto:${portfolioData.email}`}>
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`mailto:${data.email}`}>
 						<FaEnvelope className={styles.contactIcon} aria-hidden="true" />
 						<span className={styles.contactText}>
 							<span className={styles.contactLabel}>Email</span>
-							{portfolioData.email}
+							{data.email}
 						</span>
 					</a>
-					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`tel:${portfolioData.phones[0].replace(/\D/g, "")}`}>
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={`tel:${data.phones[0].replace(/\D/g, "")}`}>
 						<FaPhone className={styles.contactIcon} aria-hidden="true" />
 						<span className={styles.contactText}>
 							<span className={styles.contactLabel}>Call</span>
-							{portfolioData.phones[0]}
+							{data.phones[0]}
 						</span>
 					</a>
-					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={portfolioData.linkedin} target="_blank" rel="noreferrer">
+					<a className={`${styles.contactItem} ${styles.heroContactItem}`} href={data.linkedin} target="_blank" rel="noreferrer">
 						<FaLinkedinIn className={styles.contactIcon} aria-hidden="true" />
 						<span className={styles.contactText}>
 							<span className={styles.contactLabel}>Profile</span>
@@ -109,15 +112,15 @@ const HomeSection = ({ id }) => {
 					</a>
 					<a
 						className={`${styles.contactItem} ${styles.heroContactItem}`}
-						href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(portfolioData.location)}`}
+						href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.location)}`}
 						target="_blank"
 						rel="noreferrer"
-						aria-label={`View ${portfolioData.location} on Google Maps`}
+						aria-label={`View ${data.location} on Google Maps`}
 					>
 						<FaMapMarkerAlt className={styles.contactIcon} aria-hidden="true" />
 						<span className={styles.contactText}>
 							<span className={styles.contactLabel}>Location</span>
-							{portfolioData.location}
+							{data.location}
 						</span>
 						<FaExternalLinkAlt className={styles.contactExternalIcon} aria-hidden="true" />
 					</a>

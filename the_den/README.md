@@ -107,20 +107,31 @@ To deploy the updated version on Vercel:
 
 ## Data and database
 
-The portfolio uses Neon Postgres as an optional server-side data layer. The schema is in [db/schema.sql](db/schema.sql), and [scripts/seed-neon.mjs](scripts/seed-neon.mjs) stores the current portfolio data as JSONB in `portfolio_content`. Contact submissions are stored in `contact_messages` when `DATABASE_URL` is configured. Static portfolio content in [features/portfolio/data/portfolioData.js](features/portfolio/data/portfolioData.js) remains the build-time source and fallback when Neon is not configured.
+Portfolio content is stored in normalized Neon Postgres tables defined in [db/schema.sql](db/schema.sql). Server-only queries in [server/portfolio.js](server/portfolio.js) load the home profile for the initial render and fetch Experience, Skills, Profile, and Lab independently as each section approaches the viewport. The allowlisted `/api/portfolio?section=...` endpoint returns only the requested section. There is no bundled portfolio-data fallback; the app requires `DATABASE_URL` and migrated portfolio tables. Contact submissions and chat records use their separate tables.
 
-Set up Neon locally:
+Create or select an isolated Neon development branch, then pull its Postgres variables into the ignored `.env.neon.portfolio.local` file:
 
 ```bash
-copy .env.example .env.local
-# edit .env.local and add DATABASE_URL
-npm run db:seed
+neon env pull --branch <development-branch> --file .env.neon.portfolio.local --service postgres
+npm run db:migrate
+npm run db:verify
+npm run test:portfolio
 ```
 
-Use `/api/portfolio` to confirm that the portfolio row is available. Use the Neon console's SQL editor to inspect rows safely; never expose `DATABASE_URL` with a `NEXT_PUBLIC_` prefix.
+The migration backfills normalized tables from the legacy `portfolio_content` row when present, then removes that legacy table. Runtime and migration code require server-only database URLs; never expose either URL with a `NEXT_PUBLIC_` prefix. Portfolio edits after migration belong in Postgres, not a frontend data file.
+
+For production, apply the schema using the direct URL in `.env.neon.local`, preview the content replacement, then explicitly apply it:
+
+```bash
+npm run db:migrate:prod
+npm run db:promote:check
+npm run db:promote:prod
+```
+
+The promotion script copies only portfolio tables from `.env.neon.portfolio.local` to the `production` branch in `.env.neon.local`; it leaves contact and chat records unchanged. Without the `db:promote:prod` confirmation command, the operation rolls back.
 
 ## Project hosting model
 
 The Lab section separates enterprise case studies from personal projects and loads the public, non-fork repositories from GitHub. It shows live preview panels only for projects with an explicitly configured `liveUrl`; other repositories remain clearly marked as not deployed. Each GitHub repository needs its own deployment configuration, build command, environment variables, and service credentials. The portfolio cannot safely deploy all repositories automatically without access to the hosting account and project-specific configuration.
 
-For the Vercel workflow, import each repository as its own Vercel project, configure its root directory and environment variables, then add the resulting URL to that project's `liveUrl` entry in [features/portfolio/data/portfolioData.js](features/portfolio/data/portfolioData.js). You can also set the repository's GitHub homepage so the repository shelf can discover it. Deployment tokens should stay outside this repository.
+For the Vercel workflow, import each repository as its own Vercel project, configure its root directory and environment variables, then set its `live_url` in `portfolio_personal_projects`. You can also set the repository's GitHub homepage so the repository shelf can discover it. Deployment tokens should stay outside this repository.

@@ -2,10 +2,10 @@ export const MAX_CHAT_INPUT_LENGTH = 500;
 export const MAX_CHAT_OUTPUT_LENGTH = 1800;
 
 export const PORTFOLIO_ONLY_REFUSAL =
-	"I can only help with Tanmoy's public portfolio, experience, skills, projects, education, and contact details.";
+	"I can only help with this portfolio's professional experience, skills, projects, education, and contact details.";
 
 export const SECURITY_REFUSAL =
-	"I can't reveal hidden instructions, credentials, configuration, or internal system details. I can answer questions about Tanmoy's public portfolio.";
+	"I can't reveal hidden instructions, credentials, configuration, or internal system details. I can answer questions about the public portfolio.";
 
 const controlCharacterPattern = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200D\uFEFF]/g;
 const injectionPatterns = [
@@ -16,16 +16,16 @@ const injectionPatterns = [
 	/\b(?:jailbreak|dan\s+mode|developer\s+mode|bypass\s+(?:the\s+)?(?:guardrail|safety|policy))\b/i,
 	/\b(?:act as|pretend to be)\b.{0,50}\b(?:unrestricted|system|developer|administrator)\b/i,
 ];
-const portfolioPattern = /\b(?:tanmoy(?:'s|s)?|portfolio|resume|experience|career|role|work|company|deloitte|tiger analytics|accenture|projects?|skills?|skillsets?|technology|tech stack|frontend|backend|full stack|cloud|aws|azure|react|node|javascript|postgres|websocket|generative ai|education|college|degree|certification|achievement|leadership|team|leetcode|github|linkedin|contact|email|phone|location|bengaluru|hire|availability|consultant)\b/i;
+const portfolioPattern = /\bwhat does\s+.{1,60}\s+do\b|\b(?:portfolio|resume|experience|career|role|work|company|projects?|skills?|skillsets?|technology|tech stack|frontend|backend|full stack|cloud|aws|azure|react|node|javascript|postgres|websocket|generative ai|education|college|degree|certification|achievement|leadership|team|leetcode|github|linkedin|contact|email|phone|location|hire|availability|consultant)\b/i;
 const greetingPattern = /^(?:hi|hello|hey|good\s+(?:morning|afternoon|evening)|help|what can you do)[!.?\s]*$/i;
 const followUpPattern = /^(?:tell me more(?: about (?:that|this|his (?:work|role|project|experience)))?|what about (?:that|this|his (?:work|role|project|experience))|when was that|where was that|which (?:project|role|skill|company)(?: was that)?)\??$/i;
 const attachmentPattern = /\b(?:summari[sz](?:e|ing)|analy[sz](?:e|ing)|review(?:ing)?|explain(?:ing)?|compare(?:d|s|ing)?|extract(?:ed|s|ing)?)\b.{0,80}\b(?:attached|attachments?|files?|documents?|spreadsheets?|workbooks?|pdfs?|texts?|notes?|resumes?|cover\s+letters?)\b/i;
 const sensitiveOutputPattern = /\b(?:GEMINI_API_KEY|CHAT_TOKEN_SECRET|process\.env|system prompt|developer message)\b|\bAIza[A-Za-z0-9_-]{20,}\b|\bAQ\.[A-Za-z0-9_-]{16,}\b/i;
 const topSkillsPattern = /\b(?:top|main|core)\b.{0,30}\b(?:skills?|skillsets?)\b|\b(?:skills?|skillsets?)\b.{0,30}\b(?:top|main|core)\b/i;
 const aiProjectsPattern = /\b(?:which|what|show|list|describe|tell)\b.{0,40}\bprojects?\b.{0,40}\b(?:ai|genai|generative ai)\b|\b(?:ai|genai|generative ai)\b.{0,40}\bprojects?\b/i;
-const currentRolePattern = /\b(?:current|present|now)\b.{0,30}\b(?:role|job|position|work)\b|\bwhat does tanmoy do\b/i;
+const currentRolePattern = /\b(?:current|present|now)\b.{0,30}\b(?:role|job|position|work)\b|\bwhat does\s+.{1,60}\s+do\b/i;
 const cloudSkillsPattern = /\b(?:summarize|summary|describe|what are)\b.{0,40}\b(?:cloud|aws|azure)\b.{0,20}\bskills?\b|\bcloud skills?\b/i;
-const contactPattern = /\b(?:how|where)\b.{0,25}\b(?:contact|reach|email|call)\b.{0,20}\btanmoy\b|\bcontact details?\b/i;
+const contactPattern = /\b(?:how|where)\b.{0,45}\b(?:contact|reach|email|call)\b|\bcontact details?\b/i;
 const roleProjectsFollowUpPattern = /\bwhich projects?\b.{0,40}\b(?:recent )?impact\b/i;
 const roleSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\bsupport\b.{0,20}\b(?:this|his|the) role\b/i;
 const projectSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\b(?:those|the) projects?\b.{0,20}\bdemonstrate\b/i;
@@ -72,8 +72,9 @@ export function redactChatLogText(value) {
 
 export function getDirectPortfolioResponse(message, { visitorName, portfolioData, hasAttachments = false }) {
 	if (hasAttachments) return null;
+	const ownerName = portfolioData.shortName || portfolioData.name;
 	if (greetingPattern.test(message)) {
-		return `Hi ${visitorName}. I can help with Tanmoy's experience, skills, projects, certifications, and contact details.`;
+		return `Hi ${visitorName}. I can help with ${ownerName}'s experience, skills, projects, certifications, and contact details.`;
 	}
 	if (topSkillsPattern.test(message)) {
 		const groups = portfolioData.skills.map((group) => {
@@ -84,7 +85,7 @@ export function getDirectPortfolioResponse(message, { visitorName, portfolioData
 				.join(", ");
 			return `${group.category} (${strongest})`;
 		});
-		return `Tanmoy's four core skill groups are: ${groups.join("; ")}.`;
+		return `${ownerName}'s four core skill groups are: ${groups.join("; ")}.`;
 	}
 	if (aiProjectsPattern.test(message)) {
 		const projects = portfolioData.projects.filter((project) =>
@@ -96,19 +97,20 @@ export function getDirectPortfolioResponse(message, { visitorName, portfolioData
 	}
 	if (currentRolePattern.test(message)) {
 		const current = portfolioData.experience.find((role) => role.current) || portfolioData.experience[0];
-		return `Tanmoy is currently ${current.role} at ${current.company} in ${current.location}, since ${current.dates.split("—")[0].trim()}. ${current.summary}`;
+		return `${ownerName} is currently ${current.role} at ${current.company} in ${current.location}, since ${current.dates.split("—")[0].trim()}. ${current.summary}`;
 	}
 	if (cloudSkillsPattern.test(message)) {
 		const cloud = portfolioData.skills.find((group) => group.category.includes("Cloud"));
-		return `Tanmoy's cloud toolkit includes ${cloud.items.map((skill) => skill.name).join(", ")}. His work covers serverless systems, CI/CD, messaging, and Azure solution architecture.`;
+		return `${ownerName}'s cloud toolkit includes ${cloud.items.map((skill) => skill.name).join(", ")}. The work covers serverless systems, CI/CD, messaging, and Azure solution architecture.`;
 	}
 	if (contactPattern.test(message)) {
-		return `You can reach Tanmoy at ${portfolioData.email}, connect on LinkedIn at ${portfolioData.linkedin}, or call ${portfolioData.phones[0]}.`;
+		return `You can reach ${ownerName} at ${portfolioData.email}, connect on LinkedIn at ${portfolioData.linkedin}, or call ${portfolioData.phones[0]}.`;
 	}
 	return null;
 }
 
 export function getContextualPortfolioResponse(message, { history, portfolioData, hasAttachments = false }) {
+	const ownerName = portfolioData.shortName || portfolioData.name;
 	const isContextualQuestion = [
 		followUpPattern,
 		roleProjectsFollowUpPattern,
@@ -124,7 +126,7 @@ export function getContextualPortfolioResponse(message, { history, portfolioData
 	if (!previousQuestion) return null;
 	const current = portfolioData.experience.find((role) => role.current) || portfolioData.experience[0];
 	if (roleSkillsFollowUpPattern.test(message)) {
-		return `The role is supported by ${current.stack.join(", ")}. Tanmoy also brings architecture leadership, technical scoping, and end-to-end delivery experience.`;
+		return `The role is supported by ${current.stack.join(", ")}. ${ownerName} also brings architecture leadership, technical scoping, and end-to-end delivery experience.`;
 	}
 	if (roleProjectsFollowUpPattern.test(message)) {
 		const projects = portfolioData.projects.filter((project) => project.client === current.company);
@@ -132,11 +134,11 @@ export function getContextualPortfolioResponse(message, { history, portfolioData
 	}
 	if (leadershipProjectFollowUpPattern.test(message)) {
 		const leadershipProject = portfolioData.projects.find((project) => /team/i.test(project.metric)) || portfolioData.projects[0];
-		return `${leadershipProject.title} best shows leadership: ${leadershipProject.description} Tanmoy led ${leadershipProject.metric.toLowerCase()} and delivered ${leadershipProject.highlights.slice(0, 2).join(" and ").toLowerCase()}.`;
+		return `${leadershipProject.title} best shows leadership: ${leadershipProject.description} ${ownerName} led ${leadershipProject.metric.toLowerCase()} and delivered ${leadershipProject.highlights.slice(0, 2).join(" and ").toLowerCase()}.`;
 	}
 
 	if (currentRolePattern.test(previousQuestion)) {
-		return `${current.summary} ${current.highlights.join(" ")} His core stack in this role is ${current.stack.join(", ")}.`;
+		return `${current.summary} ${current.highlights.join(" ")} ${ownerName}'s core stack in this role is ${current.stack.join(", ")}.`;
 	}
 	if (aiProjectsPattern.test(previousQuestion) || /\bprojects?\b/i.test(previousQuestion)) {
 		const projects = portfolioData.projects.filter((project) =>

@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaGithub, FaExternalLinkAlt, FaCode } from "react-icons/fa";
 import styles from "./Sections.module.css";
 import SortableGrid from "@/shared/components/SortableGrid";
-import { portfolioData } from "../data/portfolioData";
-
-const githubApiUrl = "https://api.github.com/users/roytanmoy1/repos?per_page=100&sort=updated";
-const personalProjects = portfolioData.personalProjects.map((project) => ({
-	...project,
-	id: project.repo,
-	label: project.title,
-}));
+import { usePortfolioSectionData } from "../hooks/usePortfolioSectionData";
+import PortfolioSectionFeedback from "../components/PortfolioSectionFeedback";
 
 const normalizeExternalUrl = (value) => {
 	if (typeof value !== "string" || !value.trim()) return "";
@@ -25,31 +19,53 @@ const normalizeExternalUrl = (value) => {
 	}
 };
 
-const isOwnedGithubUrl = (value) => {
+const getGithubOwner = (value) => {
 	try {
 		const url = new URL(value);
-		return url.protocol === "https:" && url.hostname === "github.com" && url.pathname.startsWith("/roytanmoy1/");
+		const segments = url.pathname.split("/").filter(Boolean);
+		return url.protocol === "https:" && url.hostname === "github.com" && segments.length === 1
+			? segments[0]
+			: "";
+	} catch {
+		return "";
+	}
+};
+
+const isOwnedGithubUrl = (value, owner) => {
+	try {
+		const url = new URL(value);
+		const [repositoryOwner, repository] = url.pathname.split("/").filter(Boolean);
+		return url.protocol === "https:"
+			&& url.hostname === "github.com"
+			&& repositoryOwner?.toLowerCase() === owner.toLowerCase()
+			&& Boolean(repository);
 	} catch {
 		return false;
 	}
 };
 
 const LabSection = ({ id }) => {
+	const { sectionRef, data: labData, error: portfolioError, retry: retryPortfolio } = usePortfolioSectionData("lab");
 	const [repositories, setRepositories] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [showAll, setShowAll] = useState(false);
-	const sectionRef = useRef(null);
+	const personalProjects = (labData?.personalProjects ?? []).map((project) => ({
+		...project,
+		id: project.repo,
+		label: project.title,
+	}));
 
 	useEffect(() => {
+		const owner = getGithubOwner(labData?.github);
 		const section = sectionRef.current;
-		if (!section) return undefined;
+		if (!section || !owner) return undefined;
 
 		const controller = new AbortController();
 
 		const loadRepositories = async () => {
 			try {
-				const response = await fetch(githubApiUrl, {
+				const response = await fetch(`https://api.github.com/users/${encodeURIComponent(owner)}/repos?per_page=100&sort=updated`, {
 					headers: { Accept: "application/vnd.github+json" },
 					signal: controller.signal,
 				});
@@ -60,7 +76,7 @@ const LabSection = ({ id }) => {
 				if (!Array.isArray(payload)) throw new Error("GitHub returned an unexpected response.");
 
 				const safeRepositories = payload
-					.filter((repository) => !repository.fork && isOwnedGithubUrl(repository.html_url))
+					.filter((repository) => !repository.fork && isOwnedGithubUrl(repository.html_url, owner))
 					.map((repository) => ({
 						name: typeof repository.name === "string" ? repository.name : "Repository",
 						description: typeof repository.description === "string" && repository.description.trim()
@@ -96,13 +112,13 @@ const LabSection = ({ id }) => {
 			observer.disconnect();
 			controller.abort();
 		};
-	}, []);
+	}, [labData?.github, sectionRef]);
 
 	const featuredNames = useMemo(
-		() => new Set(portfolioData.personalProjects.map((project) => project.repo)),
-		[]
+		() => new Set(labData?.personalProjects.map((project) => project.repo) ?? []),
+		[labData]
 	);
-	const repositoryShelf = repositories.filter((repository) => !featuredNames.has(repository.name));
+	const repositoryShelf = labData ? repositories.filter((repository) => !featuredNames.has(repository.name)) : [];
 	const visibleRepositories = showAll ? repositoryShelf : repositoryShelf.slice(0, 8);
 
 	return (
@@ -119,17 +135,28 @@ const LabSection = ({ id }) => {
 							<p className={styles.educationLabel}>Curated projects</p>
 							<h3 className={styles.educationTitle}>Personal builds and experiments</h3>
 						</div>
-						<a className={styles.projectLink} href={portfolioData.github} target="_blank" rel="noreferrer">
-							All GitHub repos
-						</a>
+						{labData?.github && (
+							<a className={styles.projectLink} href={labData.github} target="_blank" rel="noreferrer">
+								All GitHub repos
+							</a>
+						)}
 					</div>
 
-					<SortableGrid
-						items={personalProjects}
-						className={styles.personalProjectGrid}
-						storageKey="portfolio-project-order"
-						renderItem={(project) => (
-							<article className={styles.personalProjectCard}>
+					{!labData ? (
+						<PortfolioSectionFeedback
+							label="personal projects"
+							error={portfolioError}
+							onRetry={retryPortfolio}
+							className={styles.repoMessage}
+							retryClassName={styles.filterButton}
+						/>
+					) : (
+						<SortableGrid
+							items={personalProjects}
+							className={styles.personalProjectGrid}
+							storageKey="portfolio-project-order"
+							renderItem={(project) => (
+								<article className={styles.personalProjectCard}>
 								<div className={styles.projectPreview}>
 									{project.liveUrl ? (
 										<div className={styles.previewPlaceholder}>
@@ -166,9 +193,10 @@ const LabSection = ({ id }) => {
 										<span className={styles.repoStatus}>Not deployed yet</span>
 									)}
 								</div>
-							</article>
-						)}
-					/>
+								</article>
+							)}
+						/>
+					)}
 				</div>
 
 				<div className={styles.repositoryShelf}>
@@ -187,7 +215,7 @@ const LabSection = ({ id }) => {
 					{loading && <p className={styles.repoMessage} role="status">Loading public repositories…</p>}
 					{error && (
 						<p className={styles.repoMessage} role="status">
-							{error} <a href={portfolioData.github} target="_blank" rel="noreferrer">Browse GitHub directly.</a>
+							{error} {labData?.github && <a href={labData.github} target="_blank" rel="noreferrer">Browse GitHub directly.</a>}
 						</p>
 					)}
 					{!loading && !error && (

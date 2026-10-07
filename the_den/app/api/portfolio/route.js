@@ -1,33 +1,23 @@
 import { NextResponse } from "next/server";
-import { getDatabase } from "@/server/neon";
+import { getPortfolioSection } from "@/server/portfolio";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-	const database = getDatabase();
-	if (!database) {
-		return NextResponse.json({ source: "static", configured: false });
+const availableSections = new Set(["experience", "skills", "about", "lab"]);
+
+export async function GET(request) {
+	const section = new URL(request.url).searchParams.get("section");
+	if (!availableSections.has(section)) {
+		return NextResponse.json({ error: "Choose a valid portfolio section." }, { status: 400 });
 	}
 
 	try {
-		const rows = await database`
-			SELECT content, updated_at
-			FROM portfolio_content
-			WHERE content_key = 'portfolio'
-			LIMIT 1
-		`;
-
-		if (!rows.length) {
-			return NextResponse.json({ error: "Portfolio content has not been seeded." }, { status: 404 });
-		}
-
-		return NextResponse.json({
-			source: "neon",
-			configured: true,
-			updatedAt: rows[0].updated_at,
-			content: rows[0].content,
-		});
+		const data = await getPortfolioSection(section);
+		return NextResponse.json({ section, data }, { headers: { "Cache-Control": "no-store" } });
 	} catch {
-		return NextResponse.json({ error: "Neon is unavailable." }, { status: 503 });
+		return NextResponse.json(
+			{ error: "Portfolio data is temporarily unavailable." },
+			{ status: 503, headers: { "Cache-Control": "no-store" } }
+		);
 	}
 }

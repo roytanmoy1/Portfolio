@@ -16,7 +16,12 @@
     "test:chat-schema": "node scripts/verify-chat-schema.mjs",
     "test:chat-storage": "node scripts/verify-chat-storage.mjs",
     "test:contact": "node scripts/test-contact-provider.mjs",
-    "db:seed": "node --env-file=.env.local scripts/seed-neon.mjs",
+    "db:migrate": "node --env-file=.env.neon.portfolio.local scripts/migrate-neon.mjs",
+    "db:migrate:prod": "node --env-file=.env.neon.local scripts/migrate-neon.mjs",
+    "db:promote:check": "node scripts/promote-portfolio-data.mjs",
+    "db:promote:prod": "node scripts/promote-portfolio-data.mjs --apply --confirm-production",
+    "db:verify": "node --env-file=.env.neon.portfolio.local scripts/verify-portfolio-db.mjs",
+    "test:portfolio": "node --env-file=.env.neon.portfolio.local scripts/test-portfolio-sections.mjs",
     "dev:watch": "nodemon --watch ./app --watch ./features --watch ./shared --watch ./server --watch ./functions --watch ./public --ext js,jsx,css,json --exec \"next dev --turbopack\""
   },
   "dependencies": {

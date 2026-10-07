@@ -10,7 +10,7 @@ import HomeSection from "./sections/HomeSection";
 import LabSection from "./sections/LabSection";
 import SkillsSection from "./sections/SkillsSection";
 
-const PortfolioContent = () => {
+const PortfolioContent = ({ initialHome }) => {
 	const { isAssistantOpen } = useAssistant();
 
 	return (
@@ -20,24 +20,24 @@ const PortfolioContent = () => {
 			<a className={styles.skipLink} href="#main-content">
 				Skip to main content
 			</a>
-			<Header />
+			<Header home={initialHome} />
 			<main id="main-content" className={styles.main}>
-				<HomeSection id="home" />
-				<AboutSection id="about" />
+				<HomeSection id="home" data={initialHome} />
 				<ExperienceSection id="experience" />
 				<SkillsSection id="skills" />
+				<AboutSection id="about" />
 				<LabSection id="lab" />
-				<ContactSection id="contact" />
+				<ContactSection id="contact" home={initialHome} />
 			</main>
-			<ChatPanel />
+			<ChatPanel home={initialHome} />
 		</div>
 	);
 };
 
-export default function Home() {
+export default function Home({ initialHome }) {
 	return (
 		<AssistantProvider>
-			<PortfolioContent />
+			<PortfolioContent initialHome={initialHome} />
 		</AssistantProvider>
 	);
 }

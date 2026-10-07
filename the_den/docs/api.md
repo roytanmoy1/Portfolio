@@ -4,13 +4,15 @@ The web app runs on Next.js 16 route handlers with the Node.js runtime. The assi
 
 ## Portfolio content
 
-### `GET /api/portfolio`
+### `GET /api/portfolio?section=<name>`
 
-Reports the content source. When Neon is configured, the response includes the seeded public JSON; otherwise it reports `source: "static"` and the frontend uses its bundled portfolio data.
+Returns one allowlisted section from normalized Postgres tables. Supported names are `experience`, `skills`, `about`, and `lab`. The home profile is fetched server-side for the initial render; the browser requests deeper sections as they approach the viewport.
 
-- `200`: `{ "source": "static", "configured": false }` or `{ "source": "neon", "configured": true, "updatedAt": "...", "content": {} }`
-- `404`: the Neon portfolio row has not been seeded.
-- `503`: Neon could not be reached.
+- `200`: `{ "section": "experience", "data": [...] }`
+- `400`: missing or unsupported section.
+- `503`: portfolio data is unavailable.
+
+`GET /llms.txt` builds its public text from the same database-backed section queries. There is no bundled portfolio-data fallback.
 
 ## Contact
 

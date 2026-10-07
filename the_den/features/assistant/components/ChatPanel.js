@@ -11,45 +11,50 @@ import {
 	FaTimes,
 } from "react-icons/fa";
 import { useAssistant } from "../context/AssistantContext";
-import { portfolioData } from "../../portfolio/data/portfolioData";
 import { CONTACT_LIMITS, getContactFieldValidationError, normalizeContactFields } from "../../contact/contactValidation";
 import styles from "./ChatPanel.module.css";
 
-const starterSuggestions = [
-	"What is Tanmoy's current role?",
+const getStarterSuggestions = (shortName) => [
+	`What is ${shortName}'s current role?`,
 	"Which projects show AI experience?",
-	"Summarize his cloud skills.",
-	"Send an email to Tanmoy",
+	"Summarize the cloud skills.",
+	`Send an email to ${shortName}`,
 ];
-const contactIntentPattern = /\b(?:send|write)\b.{0,50}\b(?:message|email|note)\b|\bemail\s+(?:tanmoy|him)\b|\bcontact\s+tanmoy\b/i;
-const contactPrompts = {
-	name: "What name should I include in the email?",
-	email: "What email address should Tanmoy reply to?",
-	message: "What would you like the email to say?",
+const createContactIntentPattern = (home) => {
+	const ownerNames = [...new Set([home.name, home.shortName, home.name.split(/\s+/)[0]])];
+	const ownerPattern = ownerNames
+		.map((name) => name.split(/\s+/).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+"))
+		.join("|");
+	return new RegExp(`\\b(?:send|write)\\b.{0,50}\\b(?:message|email|note)\\b|\\bemail\\s+(?:${ownerPattern}|him|them)\\b|\\bcontact\\s+(?:${ownerPattern}|him|them)\\b`, "i");
 };
+const getContactPrompts = (shortName) => ({
+	name: "What name should I include in the email?",
+	email: `What email address should ${shortName} reply to?`,
+	message: "What would you like the email to say?",
+});
 
-const getSuggestedQuestions = (messages, isTyping) => {
+const getSuggestedQuestions = (messages, isTyping, shortName) => {
 	const lastMessage = messages.at(-1);
-	if (!lastMessage) return starterSuggestions;
+	if (!lastMessage) return getStarterSuggestions(shortName);
 	if (isTyping || lastMessage.role !== "assistant") return [];
 
 	const userQuestions = messages.filter((message) => message.role === "user");
 	const lastQuestion = userQuestions.at(-1);
-	if (!lastQuestion) return starterSuggestions;
+	if (!lastQuestion) return getStarterSuggestions(shortName);
 	const topicQuestion = /^tell me more\b/i.test(lastQuestion.text) && userQuestions.length > 1
 		? userQuestions.at(-2)
 		: lastQuestion;
 	let questions;
 	if (topicQuestion.attachments?.length) {
-		questions = ["Tell me more", "How does this relate to Tanmoy's experience?"];
+		questions = ["Tell me more", `How does this relate to ${shortName}'s experience?`];
 	} else if (/\b(?:role|job|deloitte|work)\b/i.test(topicQuestion.text)) {
 		questions = ["Which projects show his recent impact?", "What skills support this role?"];
 	} else if (/\bprojects?\b/i.test(topicQuestion.text)) {
 		questions = ["What skills do those projects demonstrate?", "Which project best shows leadership?"];
 	} else if (/\b(?:skills?|cloud|aws|azure|frontend|backend)\b/i.test(topicQuestion.text)) {
-		questions = ["Which projects use those skills?", "What is Tanmoy's current role?"];
+		questions = ["Which projects use those skills?", `What is ${shortName}'s current role?`];
 	} else if (/\b(?:contact|email|reach|call)\b/i.test(topicQuestion.text)) {
-		questions = ["Send a message to Tanmoy", "What is Tanmoy's current role?"];
+		questions = [`Send a message to ${shortName}`, `What is ${shortName}'s current role?`];
 	} else {
 		questions = ["Tell me more", "Which projects show AI experience?"];
 	}
@@ -109,8 +114,10 @@ const getChatCredentials = async () => {
 	return tokenPayload;
 };
 
-const ChatPanel = () => {
+const ChatPanel = ({ home }) => {
 	const { isAssistantOpen, closeAssistant } = useAssistant();
+	const contactIntentPattern = createContactIntentPattern(home);
+	const contactPrompts = getContactPrompts(home.shortName);
 	const [messages, setMessages] = useState([]);
 	const [input, setInput] = useState("");
 	const [connectionState, setConnectionState] = useState("idle");
@@ -207,7 +214,7 @@ const ChatPanel = () => {
 		}
 	};
 
-	const startContactFlow = (request = "I'd like to send Tanmoy an email.") => {
+	const startContactFlow = (request = `I'd like to send ${home.shortName} an email.`) => {
 		const nextStep = visitorName ? "email" : "name";
 		setContactForm({ ...initialContactForm, name: visitorName });
 		setContactFlowStep(nextStep);
@@ -241,13 +248,13 @@ const ChatPanel = () => {
 			setMessages((current) => [...current, {
 				id: createId(),
 				role: "assistant",
-				text: "Your message was recorded. An email notification was requested; Tanmoy can reply to the address you provided.",
+				text: `Your message was recorded. An email notification was requested; ${home.shortName} can reply to the address you provided.`,
 			}]);
 		} catch (error) {
 			setMessages((current) => [...current, {
 				id: createId(),
 				role: "error",
-				text: `I couldn't send that email: ${error.message || "delivery failed"} You can email Tanmoy directly at ${portfolioData.email}.`,
+				text: `I couldn't send that email: ${error.message || "delivery failed"} You can email ${home.shortName} directly at ${home.email}.`,
 			}]);
 		} finally {
 			setContactFlowStep(null);
@@ -777,17 +784,17 @@ const ChatPanel = () => {
 		setAttachments([]);
 	};
 
-	const suggestedQuestions = getSuggestedQuestions(messages, isTyping);
+	const suggestedQuestions = getSuggestedQuestions(messages, isTyping, home.shortName);
 
 	if (!isAssistantOpen) return null;
 
 	return (
-				<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label={portfolioData.assistantName}>
+				<aside id="portfolio-assistant" className={styles.panel} role="dialog" aria-label={home.assistantName}>
 				<header className={styles.header}>
 					<div className={styles.identity}>
 						<span className={styles.botIcon} aria-hidden="true"><FaRobot /></span>
 						<div>
-							<h2>{portfolioData.assistantName}</h2>
+							<h2>{home.assistantName}</h2>
 						</div>
 					</div>
 					{visitorName && <button
@@ -811,9 +818,9 @@ const ChatPanel = () => {
 						{connectionLabels[activeConnectionState]}
 					</span>
 					{visitorName && <div className={styles.statusActions}>
-						<button type="button" className={styles.contactButton} onClick={() => startContactFlow()} aria-label="Email Tanmoy" disabled={Boolean(contactFlowStep) || isContactSubmitting}>
+						<button type="button" className={styles.contactButton} onClick={() => startContactFlow()} aria-label={`Email ${home.shortName}`} disabled={Boolean(contactFlowStep) || isContactSubmitting}>
 							<FaEnvelope aria-hidden="true" />
-							<span>Email Tanmoy</span>
+							<span>Email {home.shortName}</span>
 						</button>
 					</div>}
 				</div>
@@ -847,7 +854,7 @@ const ChatPanel = () => {
 									<strong>Hi {visitorName}. Start with a portfolio question.</strong>
 									<p>I can discuss public experience, skills, projects, education, and contact details.</p>
 									<button type="button" className={styles.contactCta} onClick={() => startContactFlow()}>
-										<FaEnvelope aria-hidden="true" /> Email Tanmoy
+										<FaEnvelope aria-hidden="true" /> Email {home.shortName}
 									</button>
 								</div>
 							)}

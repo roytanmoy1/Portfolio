@@ -6,18 +6,17 @@ import Image from "next/image";
 import { FaSun, FaMoon, FaRobot } from "react-icons/fa";
 import { useTheme } from "../theme/ThemeContext";
 import { useAssistant } from "../assistant/context/AssistantContext";
-import { portfolioData } from "../portfolio/data/portfolioData";
 
 const navigationItems = [
 	{ id: "home", label: "Home" },
-	{ id: "about", label: "About" },
 	{ id: "experience", label: "Experience" },
 	{ id: "skills", label: "Skills" },
+	{ id: "about", label: "Profile" },
 	{ id: "lab", label: "Personal lab" },
 	{ id: "contact", label: "Contact" },
 ];
 
-const Header = () => {
+const Header = ({ home }) => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const { darkMode, toggleDarkMode } = useTheme();
 	const { isAssistantOpen, toggleAssistant } = useAssistant();
@@ -55,10 +54,10 @@ const Header = () => {
 	return (
 		<header className={styles.header}>
 			<div className={styles.logo}>
-				<Link href="#home" onClick={() => scrollToSection("home")} aria-label="Tanmoy Kumar Roy home">
+				<Link href="#home" onClick={() => scrollToSection("home")} aria-label={`${home.name} home`}>
 					<span className={styles.logoMark}>
 						<Image
-							src={portfolioData.photo}
+							src={home.photo}
 							alt=""
 							width={48}
 							height={48}
@@ -66,8 +65,8 @@ const Header = () => {
 						/>
 					</span>
 					<span className={styles.logoText}>
-						<strong>Tanmoy</strong>
-						<small>Full Stack Engineer</small>
+						<strong>{home.shortName}</strong>
+						<small>{home.title}</small>
 					</span>
 				</Link>
 			</div>
@@ -99,10 +98,10 @@ const Header = () => {
 						setIsMenuOpen(false);
 						toggleAssistant();
 					}}
-					aria-label={isAssistantOpen ? `Close ${portfolioData.assistantName}` : `Open ${portfolioData.assistantName}`}
+					aria-label={isAssistantOpen ? `Close ${home.assistantName}` : `Open ${home.assistantName}`}
 					aria-expanded={isAssistantOpen}
 					aria-controls="portfolio-assistant"
-					title={portfolioData.assistantName}
+					title={home.assistantName}
 					type="button"
 				>
 					<FaRobot aria-hidden="true" />
