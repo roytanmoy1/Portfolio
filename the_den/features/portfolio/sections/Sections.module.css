@@ -1449,6 +1449,10 @@
 		padding: var(--section-spacing) 0;
 	}
 
+	.contactSection {
+		padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+	}
+
 	.heroSection {
 		min-height: 0;
 	}

@@ -7,9 +7,6 @@ import styles from "./Sections.module.css";
 const HomeSection = ({ id, data }) => {
 	const [firstName, ...lastName] = data.name.split(/\s+/);
 	const currentRole = data.currentRole;
-	const scrollToAbout = () => {
-		document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
-	};
 
 	return (
 		<section id={id} className={`${styles.section} ${styles.heroSection}`}>
@@ -31,9 +28,9 @@ const HomeSection = ({ id, data }) => {
 							>
 								Download resume <FaArrowDown aria-hidden="true" />
 							</a>
-							<button type="button" className={styles.secondary} onClick={scrollToAbout}>
+							<a href="#experience" className={styles.secondary}>
 								Explore the work
-							</button>
+							</a>
 						</div>
 
 						<div className={styles.heroLinks}>

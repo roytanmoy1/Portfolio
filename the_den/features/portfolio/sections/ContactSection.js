@@ -61,7 +61,7 @@ const ContactSection = ({ id, home }) => {
 	};
 
 	return (
-		<section id={id} className={styles.section}>
+		<section id={id} className={`${styles.section} ${styles.contactSection}`}>
 			<div className={styles.sectionInner}>
 				<div className={styles.contactLayout}>
 					<div className={styles.contactCopy}>
