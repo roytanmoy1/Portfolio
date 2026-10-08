@@ -66,7 +66,7 @@ const portfolioData = {
 			category: "Generative AI",
 			metric: "3-engineer team",
 			description: "An enterprise conversational AI platform.",
-			stack: ["React", "WebSockets"],
+			stack: ["React", "WebSockets", "AWS"],
 			highlights: ["Built an AI assistant."],
 		},
 		{
@@ -125,6 +125,8 @@ assert.match(roleFollowUp, /React, Redux Toolkit, Node\.js/);
 assert.match(getContextualPortfolioResponse("What skills support this role?", { history: conversationHistory, portfolioData }), /React, Redux Toolkit, Node\.js/);
 assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Example AI Hub/);
 assert.equal(getContextualPortfolioResponse("Tell me more", { history: conversationHistory, portfolioData, hasAttachments: true }), null);
+const cloudHistory = appendChatHistory([], "Summarize the cloud skills.", "Avery's cloud toolkit includes AWS.");
+assert.match(getContextualPortfolioResponse("Which projects use those skills?", { history: cloudHistory, portfolioData }), /Example AI Hub/);
 conversationHistory = appendChatHistory(conversationHistory, "What skills support this role?", "React and Node.js support the role.");
 assert.match(getContextualPortfolioResponse("Which projects show his recent impact?", { history: conversationHistory, portfolioData }), /Route Explorer/);
 const projectHistory = appendChatHistory([], "Which projects show AI experience?", "Example AI Hub.");

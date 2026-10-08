@@ -35,6 +35,13 @@
 	min-width: 0;
 }
 
+.headerActions {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 0.45rem;
+}
+
 .botIcon,
 .closeButton,
 .newChatButton {

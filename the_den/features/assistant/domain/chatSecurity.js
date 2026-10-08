@@ -28,6 +28,7 @@ const cloudSkillsPattern = /\b(?:summarize|summary|describe|what are)\b.{0,40}\b
 const contactPattern = /\b(?:how|where)\b.{0,45}\b(?:contact|reach|email|call)\b|\bcontact details?\b/i;
 const roleProjectsFollowUpPattern = /\bwhich projects?\b.{0,40}\b(?:recent )?impact\b/i;
 const roleSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\bsupport\b.{0,20}\b(?:this|his|the) role\b/i;
+const skillProjectsFollowUpPattern = /\bwhich projects?\b.{0,40}\b(?:use|show|feature|include|apply|demonstrate)\b.{0,40}\b(?:(?:those|these|the)\s+)?(?:skills?|tools?|technologies?)\b/i;
 const projectSkillsFollowUpPattern = /\bwhat skills?\b.{0,30}\b(?:those|the) projects?\b.{0,20}\bdemonstrate\b/i;
 const leadershipProjectFollowUpPattern = /\bwhich project\b.{0,30}\b(?:best )?shows?\b.{0,20}\bleadership\b/i;
 
@@ -115,6 +116,7 @@ export function getContextualPortfolioResponse(message, { history, portfolioData
 		followUpPattern,
 		roleProjectsFollowUpPattern,
 		roleSkillsFollowUpPattern,
+		skillProjectsFollowUpPattern,
 		projectSkillsFollowUpPattern,
 		leadershipProjectFollowUpPattern,
 	].some((pattern) => pattern.test(message));
@@ -135,6 +137,20 @@ export function getContextualPortfolioResponse(message, { history, portfolioData
 	if (leadershipProjectFollowUpPattern.test(message)) {
 		const leadershipProject = portfolioData.projects.find((project) => /team/i.test(project.metric)) || portfolioData.projects[0];
 		return `${leadershipProject.title} best shows leadership: ${leadershipProject.description} ${ownerName} led ${leadershipProject.metric.toLowerCase()} and delivered ${leadershipProject.highlights.slice(0, 2).join(" and ").toLowerCase()}.`;
+	}
+	if (skillProjectsFollowUpPattern.test(message)
+		&& (topSkillsPattern.test(previousQuestion) || cloudSkillsPattern.test(previousQuestion))) {
+		const relevantGroups = cloudSkillsPattern.test(previousQuestion)
+			? portfolioData.skills.filter((group) => group.category.includes("Cloud"))
+			: portfolioData.skills;
+		const skillNames = relevantGroups.flatMap((group) => group.items.map((skill) => skill.name.toLowerCase()));
+		const projects = portfolioData.projects.filter((project) => project.stack.some((technology) => {
+			const normalizedTechnology = technology.toLowerCase();
+			return skillNames.some((skill) => normalizedTechnology.includes(skill) || skill.includes(normalizedTechnology));
+		}));
+		return projects.length
+			? `Projects using these skills include ${projects.map((project) => `${project.title} (${project.client})`).join(", ")}.`
+			: "The portfolio does not list projects using those skills.";
 	}
 
 	if (currentRolePattern.test(previousQuestion)) {

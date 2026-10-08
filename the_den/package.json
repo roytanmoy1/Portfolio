@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test:chat": "node scripts/test-chat-security.mjs",
+    "test:chat-local-storage": "node scripts/test-local-chat-history.mjs",
     "test:chat-audit": "node scripts/verify-chat-audit.mjs",
     "test:chat-schema": "node scripts/verify-chat-schema.mjs",
     "test:chat-storage": "node scripts/verify-chat-storage.mjs",

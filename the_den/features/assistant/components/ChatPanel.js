@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import { useAssistant } from "../context/AssistantContext";
 import { CONTACT_LIMITS, getContactFieldValidationError, normalizeContactFields } from "../../contact/contactValidation";
+import { readLocalChatHistory, writeLocalChatHistory } from "../domain/localChatHistory";
 import styles from "./ChatPanel.module.css";
 
 const getStarterSuggestions = (shortName) => [
@@ -135,6 +136,7 @@ const ChatPanel = ({ home }) => {
 	const [isTyping, setIsTyping] = useState(false);
 	const [isUserActive, setIsUserActive] = useState(true);
 	const [visitorName, setVisitorName] = useState("");
+	const [isLocalChatLoaded, setIsLocalChatLoaded] = useState(false);
 	const [nameError, setNameError] = useState("");
 	const [contactFlowStep, setContactFlowStep] = useState(null);
 	const [contactForm, setContactForm] = useState(initialContactForm);
@@ -155,6 +157,21 @@ const ChatPanel = ({ home }) => {
 	const inputRef = useRef(null);
 	const uploadDialogRef = useRef(null);
 	const uploadTriggerRef = useRef(null);
+
+	useEffect(() => {
+		const storedChat = readLocalChatHistory();
+		if (storedChat) {
+			setVisitorName(storedChat.visitorName);
+			setDraftName(storedChat.visitorName);
+			setMessages(storedChat.messages);
+		}
+		setIsLocalChatLoaded(true);
+	}, []);
+
+	useEffect(() => {
+		if (!isLocalChatLoaded) return;
+		writeLocalChatHistory(undefined, { visitorName, messages });
+	}, [isLocalChatLoaded, messages, visitorName]);
 
 
 	const closeUploadDialog = () => {
@@ -797,19 +814,21 @@ const ChatPanel = ({ home }) => {
 							<h2>{home.assistantName}</h2>
 						</div>
 					</div>
-					{visitorName && <button
-						className={styles.newChatButton}
-						type="button"
-						onClick={() => void startNewChat()}
-						disabled={isStartingNewChat || isUploading || isContactSubmitting}
-						aria-label="Start a new chat"
-						title="Start a new chat"
-					>
-						<FaPlus aria-hidden="true" />
-					</button>}
-					<button className={styles.closeButton} type="button" onClick={closeAssistant} aria-label="Close assistant">
-						<FaTimes aria-hidden="true" />
-					</button>
+					<div className={styles.headerActions}>
+						{visitorName && <button
+							className={styles.newChatButton}
+							type="button"
+							onClick={() => void startNewChat()}
+							disabled={isStartingNewChat || isUploading || isContactSubmitting}
+							aria-label="Start a new chat"
+							title="Start a new chat"
+						>
+							<FaPlus aria-hidden="true" />
+						</button>}
+						<button className={styles.closeButton} type="button" onClick={closeAssistant} aria-label="Close assistant">
+							<FaTimes aria-hidden="true" />
+						</button>
+					</div>
 				</header>
 
 				<div className={styles.status} role="status" aria-live="polite">
@@ -845,7 +864,7 @@ const ChatPanel = ({ home }) => {
 							/>
 							{nameError && <span className={styles.nameError} role="alert">{nameError}</span>}
 							<button type="submit" disabled={draftName.trim().length < 2}>Continue</button>
-							<small className={styles.retentionNote}>Your name and chat are retained for 90 days. Voice clips up to 15 seconds are sent to Gemini for transcription and aren&apos;t stored. Don&apos;t share sensitive information.</small>
+							<small className={styles.retentionNote}>This browser saves your name and recent text chat for up to 24 hours; server records may be retained for 90 days. Voice clips up to 15 seconds are sent to Gemini for transcription and aren&apos;t stored. Don&apos;t share sensitive information.</small>
 						</form>
 					) : (
 						<>
